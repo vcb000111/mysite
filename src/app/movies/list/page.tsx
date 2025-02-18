@@ -16,6 +16,7 @@ interface Movie {
   year: number;
   rating: number;
   genre: string[];
+  images: string[];
   isFavorite: boolean;
   isSeen: boolean;
   releaseDate: string;
@@ -29,6 +30,7 @@ interface MovieInput {
   releaseDate: string;
   actress: string;
   genre: string[];
+  images?: string[];
 }
 
 const mockMovies: Movie[] = [
@@ -39,6 +41,7 @@ const mockMovies: Movie[] = [
     year: 2010,
     rating: 8.8,
     genre: ['Action', 'Sci-Fi'],
+    images: [],
     isFavorite: true,
     isSeen: false,
     releaseDate: '2010-07-16',
@@ -81,6 +84,7 @@ const formatActressName = (actress: string) => {
 
 // Thêm hàm helper để làm việc với localStorage
 const LAST_SELECTED_GENRES_KEY = 'lastSelectedGenres';
+const AUTO_CHANGE_IMAGE_KEY = 'autoChangeImage'; // Thêm key mới
 
 const saveLastSelectedGenres = (genres: string[]) => {
   localStorage.setItem(LAST_SELECTED_GENRES_KEY, JSON.stringify(genres));
@@ -95,8 +99,31 @@ const getLastSelectedGenres = (): string[] => {
   }
 };
 
+// Thêm các hàm helper mới
+const saveAutoChangeImage = (enabled: boolean) => {
+  localStorage.setItem(AUTO_CHANGE_IMAGE_KEY, JSON.stringify(enabled));
+};
+
+const getAutoChangeImage = (): boolean => {
+  try {
+    const saved = localStorage.getItem(AUTO_CHANGE_IMAGE_KEY);
+    return saved ? JSON.parse(saved) : false;
+  } catch {
+    return false;
+  }
+};
+
 // Cập nhật kiểu SortOrder
 type SortOrder = 'added' | 'newest' | 'oldest';
+
+// Thêm hàm helper để trích xuất đường dẫn ảnh từ HTML
+const extractImagesFromHtml = (html: string): string[] => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const links = doc.querySelectorAll('a');
+  const imageUrls = Array.from(links).map(link => link.getAttribute('href')).filter(url => url !== null) as string[];
+  return imageUrls;
+};
 
 export default function MovieList() {
   const [buttonClasses, setButtonClasses] = useState('');
@@ -110,7 +137,8 @@ export default function MovieList() {
     poster: '',
     releaseDate: '',
     actress: '',
-    genre: getLastSelectedGenres() // Khởi tạo với genres đã lưu
+    genre: getLastSelectedGenres(), // Khởi tạo với genres đã lưu
+    images: []
   });
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
   const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
@@ -125,6 +153,11 @@ export default function MovieList() {
   const [genres, setGenres] = useState<string[]>([]);
   const [showRandom, setShowRandom] = useState(false);
   const [selectedActress, setSelectedActress] = useState<string>('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
+  const [isFading, setIsFading] = useState<{ [key: string]: boolean }>({});
+  const [autoChangeImage, setAutoChangeImage] = useState(getAutoChangeImage());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -167,6 +200,42 @@ export default function MovieList() {
     }
   }, [showPasteArea]);
 
+  // Cập nhật useEffect để chỉ chạy khi autoChangeImage được bật
+  useEffect(() => {
+    if (!autoChangeImage) return; // Thêm điều kiện kiểm tra
+
+    const interval = setInterval(() => {
+      setIsFading(prev => {
+        const newFading = { ...prev };
+        movies.forEach(movie => {
+          const allImages = [movie.poster, ...(movie.images || [])];
+          if (allImages.length > 1) {
+            newFading[movie._id] = true;
+          }
+        });
+        return newFading;
+      });
+
+      setTimeout(() => {
+        setCurrentImageIndexes(prev => {
+          const newIndexes = { ...prev };
+          movies.forEach(movie => {
+            const allImages = [movie.poster, ...(movie.images || [])];
+            if (allImages.length > 1) {
+              const currentIndex = prev[movie._id] || 0;
+              newIndexes[movie._id] = (currentIndex + 1) % allImages.length;
+            }
+          });
+          return newIndexes;
+        });
+
+        setIsFading({});
+      }, 1000);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [movies, autoChangeImage]); // Thêm autoChangeImage vào dependencies
+
   const handleAddMovie = async () => {
     try {
       if (!movieInput.title || !movieInput.code) {
@@ -186,6 +255,7 @@ export default function MovieList() {
         year: new Date(movieInput.releaseDate).getFullYear(),
         rating: 0,
         genre: movieInput.genre,
+        images: movieInput.images || [],
         isFavorite: false,
         isSeen: false
       };
@@ -214,8 +284,10 @@ export default function MovieList() {
         poster: '',
         releaseDate: '',
         actress: '',
-        genre: getLastSelectedGenres() // Lưu genres đã chọn trước khi reset form
+        genre: getLastSelectedGenres(), // Lưu genres đã chọn trước khi reset form
+        images: []
       });
+      setPasteText(''); // Reset paste text
       resetForm();
       saveLastSelectedGenres(movieInput.genre);
       Toast.fire({
@@ -265,9 +337,11 @@ export default function MovieList() {
         },
         body: JSON.stringify({
           ...movieInput,
+          images: movieInput.images || [],
           isSeen: editingMovie.isSeen,
           isFavorite: editingMovie.isFavorite,
-          rating: editingMovie.rating
+          rating: editingMovie.rating,
+          year: movieInput.releaseDate ? new Date(movieInput.releaseDate).getFullYear() : editingMovie.year
         }),
       });
 
@@ -285,8 +359,10 @@ export default function MovieList() {
         poster: '',
         releaseDate: '',
         actress: '',
-        genre: getLastSelectedGenres() // Khôi phục genres đã lưu
+        genre: getLastSelectedGenres(),
+        images: []
       });
+      setPasteText(''); // Reset paste text
       resetForm();
       saveLastSelectedGenres(movieInput.genre);
       Toast.fire({
@@ -369,7 +445,8 @@ export default function MovieList() {
       poster: '',
       releaseDate: '',
       actress: '',
-      genre: getLastSelectedGenres()
+      genre: getLastSelectedGenres(),
+      images: []
     });
     setEditingMovie(null);
     setShowPasteArea(true); // Tự động mở textarea
@@ -432,7 +509,8 @@ export default function MovieList() {
       setMovieInput(prev => ({
         ...prev,
         ...parsedInfo,
-        genre: prev.genre // Giữ nguyên genre đã chọn
+        genre: prev.genre, // Giữ nguyên genre đã chọn
+        images: prev.images || []
       }));
       setPasteText('');
       setShowPasteArea(false);
@@ -538,6 +616,23 @@ export default function MovieList() {
     }
   }, [showModal, editingMovie]);
 
+  // Thêm hàm handleCloseModal
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingMovie(null);
+    setMovieInput({
+      title: '',
+      code: '',
+      poster: '',
+      releaseDate: '',
+      actress: '',
+      genre: getLastSelectedGenres(),
+      images: []
+    });
+    setPasteText('');
+    resetForm();
+  };
+
   return (
     <div className="w-full p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
@@ -633,6 +728,42 @@ export default function MovieList() {
                     Ngẫu nhiên
                   </span>
                 </label>
+
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoChangeImage}
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      setAutoChangeImage(newValue);
+                      saveAutoChangeImage(newValue); // Lưu vào localStorage
+                      if (!newValue) {
+                        // Thêm hiệu ứng fade khi reset về poster
+                        setIsFading(prev => {
+                          const newFading = { ...prev };
+                          movies.forEach(movie => {
+                            if (currentImageIndexes[movie._id] !== undefined) {
+                              newFading[movie._id] = true;
+                            }
+                          });
+                          return newFading;
+                        });
+
+                        // Reset về poster sau khi fade out
+                        setTimeout(() => {
+                          setCurrentImageIndexes({});
+                          setIsFading({});
+                        }, 700);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-500 
+                      focus:ring-blue-500 dark:border-gray-600
+                      dark:focus:ring-offset-gray-800"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Tự động chuyển ảnh
+                  </span>
+                </label>
               </div>
 
               {/* Actress select */}
@@ -717,13 +848,49 @@ export default function MovieList() {
             >
               {/* Poster */}
               <div className="relative overflow-hidden group aspect-video">
+                {/* Ảnh hiện tại */}
                 <img
-                  src={movie.poster}
+                  key={currentImageIndexes[movie._id] || 0}
+                  src={(() => {
+                    const allImages = [movie.poster, ...(movie.images || [])];
+                    const currentIndex = currentImageIndexes[movie._id] || 0;
+                    return allImages[currentIndex] || movie.poster;
+                  })()}
                   alt={movie.title}
-                  className="w-full h-full object-cover object-top rounded-t-xl 
-                    transition-transform duration-300 group-hover:scale-110
-                    bg-gray-100 dark:bg-gray-800"
+                  className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
+                    transition-opacity duration-700 ease-in-out
+                    bg-gray-100 dark:bg-gray-800 cursor-pointer
+                    ${isFading[movie._id] ? 'opacity-0' : 'opacity-100'}`}
+                  onClick={() => {
+                    setPreviewImage(movie.poster);
+                    setPreviewImages([movie.poster, ...(movie.images || [])]);
+                  }}
                 />
+
+                {/* Ảnh tiếp theo (để fade) */}
+                <img
+                  key={`next-${currentImageIndexes[movie._id] || 0}`}
+                  src={(() => {
+                    if (isFading[movie._id] && !autoChangeImage) {
+                      // Khi đang fade và tắt auto change, hiển thị poster
+                      return movie.poster;
+                    }
+                    const allImages = [movie.poster, ...(movie.images || [])];
+                    const currentIndex = currentImageIndexes[movie._id] || 0;
+                    const nextIndex = (currentIndex + 1) % allImages.length;
+                    return allImages[nextIndex] || movie.poster;
+                  })()}
+                  alt={movie.title}
+                  className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
+                    transition-opacity duration-700 ease-in-out
+                    bg-gray-100 dark:bg-gray-800
+                    ${isFading[movie._id] ? 'opacity-100' : 'opacity-0'}`}
+                />
+
+                {/* Overlay cho hover effect */}
+                <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-110">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
 
                 {/* Seen badge */}
                 {movie.isSeen && (
@@ -798,6 +965,19 @@ export default function MovieList() {
                         ) : (
                           <HeartOff className="w-5 h-5 text-gray-400" />
                         )}
+                      </button>
+
+                      {/* Preview button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewImage(movie.poster);
+                          setPreviewImages([movie.poster, ...(movie.images || [])]);
+                        }}
+                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                      >
+                        <Eye className="w-5 h-5 text-blue-500" />
                       </button>
 
                       {/* Rating button */}
@@ -880,7 +1060,8 @@ export default function MovieList() {
                             poster: movie.poster,
                             releaseDate: movie.releaseDate,
                             actress: movie.actress,
-                            genre: movie.genre
+                            genre: movie.genre,
+                            images: movie.images
                           });
                           setEditingMovie(movie);
                           setShowModal(true);
@@ -922,7 +1103,8 @@ export default function MovieList() {
                         poster: movie.poster,
                         releaseDate: movie.releaseDate,
                         actress: movie.actress,
-                        genre: movie.genre
+                        genre: movie.genre,
+                        images: movie.images
                       });
                       setEditingMovie(movie);
                       setShowModal(true);
@@ -985,123 +1167,232 @@ export default function MovieList() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingMovie ? 'Sửa phim' : 'Thêm phim mới'}
-              </h2>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={handleCloseModal}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {editingMovie ? 'Sửa phim' : 'Thêm phim mới'}
+                </h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors duration-200"
+                >
+                  <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
 
               <div className="space-y-4" onKeyDown={(e) => handleKeyDown(e, editingMovie ? 'edit' : 'add')}>
                 {/* Paste area */}
                 {!editingMovie && (
-                  <div className="space-y-2">
+                  <div className="mb-4">
                     <textarea
                       ref={textareaRef}
                       value={pasteText}
                       onChange={(e) => setPasteText(e.target.value)}
                       onPaste={handlePaste}
                       placeholder="Paste thông tin phim vào đây..."
-                      className="w-full h-40 p-3 text-sm border rounded-lg 
+                      className="w-full h-20 p-3 text-sm border rounded-lg 
                         dark:bg-gray-700 dark:border-gray-600 dark:text-white
                         focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
                     />
                   </div>
                 )}
 
-                {/* Input fields */}
-                <input
-                  type="text"
-                  placeholder="Tiêu đề *"
-                  value={movieInput.title}
-                  onChange={(e) => setMovieInput({ ...movieInput, title: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                    required:border-red-500 dark:required:border-red-500
-                    invalid:border-red-500 dark:invalid:border-red-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Mã phim *"
-                  value={movieInput.code}
-                  onChange={(e) => setMovieInput({ ...movieInput, code: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                    required:border-red-500 dark:required:border-red-500
-                    invalid:border-red-500 dark:invalid:border-red-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Link poster *"
-                  value={movieInput.poster}
-                  onChange={(e) => setMovieInput({ ...movieInput, poster: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                    required:border-red-500 dark:required:border-red-500
-                    invalid:border-red-500 dark:invalid:border-red-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Ngày phát hành"
-                  value={movieInput.releaseDate}
-                  onChange={(e) => {
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value) || e.target.value === '') {
-                      setMovieInput({ ...movieInput, releaseDate: e.target.value });
-                    }
-                  }}
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Tên diễn viên"
-                  value={movieInput.actress}
-                  onChange={(e) => setMovieInput({ ...movieInput, actress: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
-                />
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-400">Thể loại</label>
-                  <div className="flex flex-wrap gap-2">
-                    {genres.map(genre => (
-                      <button
-                        key={genre}
-                        type="button"
-                        onClick={() => {
-                          setMovieInput(prev => ({
-                            ...prev,
-                            genre: prev.genre.includes(genre)
-                              ? prev.genre.filter(g => g !== genre)
-                              : [...prev.genre, genre]
-                          }));
+                {/* Two columns layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left column - Basic info */}
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Tiêu đề *"
+                        value={movieInput.title}
+                        onChange={(e) => setMovieInput({ ...movieInput, title: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
+                          bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                          focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Mã phim *"
+                        value={movieInput.code}
+                        onChange={(e) => setMovieInput({ ...movieInput, code: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
+                          bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                          focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                      />
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                          Link poster *
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <textarea
+                            placeholder="Nhập đường dẫn poster"
+                            value={movieInput.poster}
+                            onChange={(e) => setMovieInput({ ...movieInput, poster: e.target.value.trim() })}
+                            required
+                            className="w-full h-32 p-3 text-sm border rounded-lg 
+                              dark:bg-gray-700 dark:border-gray-600 dark:text-white
+                              focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                          />
+                          {movieInput.poster ? (
+                            <div className="relative group h-32">
+                              <img
+                                src={movieInput.poster}
+                                alt="Poster preview"
+                                className="w-full h-full object-cover rounded-lg cursor-pointer"
+                                onClick={() => {
+                                  setPreviewImage(movieInput.poster);
+                                  setPreviewImages([movieInput.poster]);
+                                }}
+                              />
+                              <button
+                                onClick={() => setMovieInput({ ...movieInput, poster: '' })}
+                                className="absolute top-2 right-2 p-1 rounded-full bg-red-500 text-white opacity-0 
+                                  group-hover:opacity-100 transition-opacity duration-200"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg
+                              flex items-center justify-center text-gray-400 dark:text-gray-500">
+                              Preview
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <input
+                          type="text"
+                          placeholder="Ngày phát hành"
+                          value={movieInput.releaseDate}
+                          onChange={(e) => {
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value) || e.target.value === '') {
+                              setMovieInput({ ...movieInput, releaseDate: e.target.value });
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                            focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Tên diễn viên"
+                          value={movieInput.actress}
+                          onChange={(e) => setMovieInput({ ...movieInput, actress: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                            focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Genre selection */}
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-600 dark:text-gray-400">Thể loại</label>
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-lg">
+                          {genres.map(genre => (
+                            <button
+                              key={genre}
+                              type="button"
+                              onClick={() => {
+                                setMovieInput(prev => ({
+                                  ...prev,
+                                  genre: prev.genre.includes(genre)
+                                    ? prev.genre.filter(g => g !== genre)
+                                    : [...prev.genre, genre]
+                                }));
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
+                                ${movieInput.genre.includes(genre)
+                                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                              {genre}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right column - Images */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">
+                        Danh sách ảnh mô tả (mỗi dòng một đường dẫn)
+                      </label>
+                      <textarea
+                        placeholder="Paste HTML hoặc nhập các đường dẫn ảnh, mỗi dòng một ảnh"
+                        value={movieInput.images?.join('\n') || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value.includes('<div class="previewthumbs"')) {
+                            const imageUrls = extractImagesFromHtml(value);
+                            setMovieInput({ ...movieInput, images: imageUrls });
+                            Toast.fire({
+                              icon: 'success',
+                              title: `Đã trích xuất ${imageUrls.length} ảnh`
+                            });
+                          } else {
+                            const imageUrls = value
+                              .split('\n')
+                              .map(url => url.trim())
+                              .filter(url => url !== '');
+                            setMovieInput({ ...movieInput, images: imageUrls });
+                          }
                         }}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
-                          ${movieInput.genre.includes(genre)
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                      >
-                        {genre}
-                      </button>
-                    ))}
+                        className="w-full h-32 p-3 text-sm border rounded-lg 
+                          dark:bg-gray-700 dark:border-gray-600 dark:text-white
+                          focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                      />
+                      {movieInput.images && movieInput.images.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-[300px] overflow-y-auto">
+                          {movieInput.images.map((url, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={url}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full aspect-video object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => {
+                                  setPreviewImage(url);
+                                  setPreviewImages(movieInput.images || []);
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  setMovieInput({
+                                    ...movieInput,
+                                    images: movieInput.images?.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white opacity-0 
+                                  group-hover:opacity-100 transition-opacity duration-200"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              {/* Footer buttons */}
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t dark:border-gray-700">
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingMovie(null);
-                    resetForm();
-                  }}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 
                     dark:hover:text-gray-200 transition-all duration-200"
                 >
@@ -1114,6 +1405,104 @@ export default function MovieList() {
                   {editingMovie ? 'Lưu' : 'Thêm'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image Preview Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black bg-opacity-75"
+            onClick={() => {
+              setPreviewImage(null);
+              setPreviewImages([]);
+            }}
+          >
+            <div className="relative max-w-5xl w-full flex-1 flex flex-col items-center justify-center gap-4">
+              <button
+                onClick={() => {
+                  setPreviewImage(null);
+                  setPreviewImages([]);
+                }}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 
+                  text-white backdrop-blur-sm transition-all duration-200 z-10"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Main preview image with navigation buttons */}
+              <div className="relative w-full flex-1 flex items-center justify-center">
+                {/* Previous button */}
+                {previewImages.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = previewImages.indexOf(previewImage);
+                      const prevIndex = currentIndex > 0 ? currentIndex - 1 : previewImages.length - 1;
+                      setPreviewImage(previewImages[prevIndex]);
+                    }}
+                    className="absolute left-4 p-3 rounded-full bg-white/20 hover:bg-white/30 
+                      text-white backdrop-blur-sm transition-all duration-200 z-10
+                      transform hover:scale-110 active:scale-95"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="max-w-full max-h-[calc(100vh-200px)] object-contain rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+
+                {/* Next button */}
+                {previewImages.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = previewImages.indexOf(previewImage);
+                      const nextIndex = currentIndex < previewImages.length - 1 ? currentIndex + 1 : 0;
+                      setPreviewImage(previewImages[nextIndex]);
+                    }}
+                    className="absolute right-4 p-3 rounded-full bg-white/20 hover:bg-white/30 
+                      text-white backdrop-blur-sm transition-all duration-200 z-10
+                      transform hover:scale-110 active:scale-95"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              {previewImages.length > 0 && (
+                <div
+                  className="w-full max-w-4xl overflow-x-auto p-2 bg-black/50 rounded-lg backdrop-blur-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex gap-2">
+                    {previewImages.map((url, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setPreviewImage(url)}
+                        className={`relative flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden 
+                          ${url === previewImage ? 'ring-2 ring-blue-500' : 'ring-1 ring-white/20'}
+                          hover:ring-2 hover:ring-blue-400 transition-all duration-200`}
+                      >
+                        <img
+                          src={url}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -31,6 +31,8 @@ export async function PUT(request: NextRequest) {
 
     await connectToDatabase();
     const data = await request.json();
+    console.log('Updating movie with ID:', id);
+    console.log('Update data:', data);
 
     // Đảm bảo cập nhật isSeen nếu có
     const updateData = {
@@ -40,6 +42,7 @@ export async function PUT(request: NextRequest) {
     };
 
     const movie = await Movie.findByIdAndUpdate(id, updateData, { new: true });
+    console.log('Updated movie:', movie);
 
     if (!movie) {
       return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
@@ -51,6 +54,7 @@ export async function PUT(request: NextRequest) {
       isSeen: movie.isSeen
     }, { status: 200 });
   } catch (error) {
+    console.error('Error updating movie:', error);
     return NextResponse.json({ error: 'Failed to update movie' }, { status: 500 });
   }
 } 

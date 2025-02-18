@@ -6,8 +6,22 @@ export async function POST(request: Request) {
     await connectToDatabase();
 
     const data = await request.json();
-    const movie = await Movie.create(data);
 
+    // Đảm bảo images là một mảng
+    const movieData = {
+      ...data,
+      images: Array.isArray(data.images) ? data.images : []
+    };
+
+    // Tạo document mới với dữ liệu đã xử lý
+    const movieDoc = new Movie(movieData);
+
+    // Gán trực tiếp mảng images nếu cần
+    if (data.images && Array.isArray(data.images)) {
+      movieDoc.images = data.images;
+    }
+
+    const movie = await movieDoc.save();
     return Response.json(movie);
   } catch (error) {
     console.error('Error adding movie:', error);

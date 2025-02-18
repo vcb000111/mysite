@@ -2,13 +2,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
-export async function PUT(request: NextRequest, { params }: Props) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { name } = await request.json();
     if (!name) {
@@ -43,7 +40,10 @@ export async function PUT(request: NextRequest, { params }: Props) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: Props) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { db } = await connectToDatabase();
     const result = await db.collection('genres').findOneAndDelete({

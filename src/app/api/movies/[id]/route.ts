@@ -2,14 +2,13 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Movie from '@/models/Movie';
 import { NextRequest } from 'next/server';
 
-interface RouteSegment {
-  params: { id: string };
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteSegment) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
-    const movie = await Movie.findByIdAndDelete(params.id);
+    const movie = await Movie.findByIdAndDelete(context.params.id);
     if (!movie) {
       return new Response(JSON.stringify({ error: 'Movie not found' }), {
         status: 404,
@@ -28,7 +27,10 @@ export async function DELETE(request: NextRequest, { params }: RouteSegment) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteSegment) {
+export async function PUT(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     const data = await request.json();
@@ -41,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: RouteSegment) {
     };
 
     const movie = await Movie.findByIdAndUpdate(
-      params.id,
+      context.params.id,
       updateData,
       { new: true }
     );

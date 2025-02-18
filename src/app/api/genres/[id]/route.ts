@@ -2,11 +2,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { NextRequest } from 'next/server';
 
-interface RouteSegment {
-  params: { id: string };
-}
-
-export async function PUT(request: NextRequest, { params }: RouteSegment) {
+export async function PUT(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const { name } = await request.json();
     if (!name) {
@@ -20,7 +19,7 @@ export async function PUT(request: NextRequest, { params }: RouteSegment) {
 
     // Kiểm tra trùng tên với các thể loại khác
     const existingGenre = await db.collection('genres').findOne({
-      _id: { $ne: new ObjectId(params.id) },
+      _id: { $ne: new ObjectId(context.params.id) },
       name: { $regex: new RegExp(`^${name}$`, 'i') }
     });
 
@@ -32,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: RouteSegment) {
     }
 
     const result = await db.collection('genres').findOneAndUpdate(
-      { _id: new ObjectId(params.id) },
+      { _id: new ObjectId(context.params.id) },
       { $set: { name, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
@@ -56,11 +55,14 @@ export async function PUT(request: NextRequest, { params }: RouteSegment) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteSegment) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const { db } = await connectToDatabase();
     const result = await db.collection('genres').findOneAndDelete({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(context.params.id)
     });
 
     if (!result) {

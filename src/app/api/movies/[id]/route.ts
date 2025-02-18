@@ -1,33 +1,34 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import Movie from '@/models/Movie';
-import { type NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+interface RouteSegment {
+  params: { id: string };
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteSegment) {
   try {
     await connectToDatabase();
     const movie = await Movie.findByIdAndDelete(params.id);
     if (!movie) {
-      return Response.json(
-        { error: 'Movie not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Movie not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-    return Response.json(movie);
+    return new Response(JSON.stringify(movie), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return Response.json(
-      { error: 'Failed to delete movie' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to delete movie' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: RouteSegment) {
   try {
     await connectToDatabase();
     const data = await request.json();
@@ -46,21 +47,24 @@ export async function PUT(
     );
 
     if (!movie) {
-      return Response.json(
-        { error: 'Movie not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Movie not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    return Response.json({
+    return new Response(JSON.stringify({
       ...movie.toObject(),
       _id: movie._id.toString(),
       isSeen: movie.isSeen
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return Response.json(
-      { error: 'Failed to update movie' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to update movie' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 } 

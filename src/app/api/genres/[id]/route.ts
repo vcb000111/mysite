@@ -1,15 +1,19 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { type NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+interface RouteSegment {
+  params: { id: string };
+}
+
+export async function PUT(request: NextRequest, { params }: RouteSegment) {
   try {
     const { name } = await request.json();
     if (!name) {
-      return Response.json({ error: 'Name is required' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Name is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const { db } = await connectToDatabase();
@@ -21,7 +25,10 @@ export async function PUT(
     });
 
     if (existingGenre) {
-      return Response.json({ error: 'Thể loại này đã tồn tại' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Thể loại này đã tồn tại' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const result = await db.collection('genres').findOneAndUpdate(
@@ -31,19 +38,25 @@ export async function PUT(
     );
 
     if (!result) {
-      return Response.json({ error: 'Genre not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'Genre not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    return Response.json(result);
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteSegment) {
   try {
     const { db } = await connectToDatabase();
     const result = await db.collection('genres').findOneAndDelete({
@@ -51,11 +64,20 @@ export async function DELETE(
     });
 
     if (!result) {
-      return Response.json({ error: 'Genre not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'Genre not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    return Response.json({ message: 'Genre deleted successfully' });
+    return new Response(JSON.stringify({ message: 'Genre deleted successfully' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 } 

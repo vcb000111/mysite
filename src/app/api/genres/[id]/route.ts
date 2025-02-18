@@ -2,10 +2,13 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+type Props = {
+  params: {
+    id: string;
+  };
+};
+
+export async function PUT(request: NextRequest, { params }: Props) {
   try {
     const { name } = await request.json();
     if (!name) {
@@ -16,7 +19,7 @@ export async function PUT(
 
     // Kiểm tra trùng tên với các thể loại khác
     const existingGenre = await db.collection('genres').findOne({
-      _id: { $ne: new ObjectId(context.params.id) },
+      _id: { $ne: new ObjectId(params.id) },
       name: { $regex: new RegExp(`^${name}$`, 'i') }
     });
 
@@ -25,7 +28,7 @@ export async function PUT(
     }
 
     const result = await db.collection('genres').findOneAndUpdate(
-      { _id: new ObjectId(context.params.id) },
+      { _id: new ObjectId(params.id) },
       { $set: { name, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
@@ -40,14 +43,11 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Props) {
   try {
     const { db } = await connectToDatabase();
     const result = await db.collection('genres').findOneAndDelete({
-      _id: new ObjectId(context.params.id)
+      _id: new ObjectId(params.id)
     });
 
     if (!result) {

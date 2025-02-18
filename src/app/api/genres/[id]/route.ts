@@ -1,57 +1,59 @@
 import { connectToDatabase } from '@/lib/mongodb';
-import Movie from '@/models/Movie';
+import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
+export async function DELETE(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const id = request.nextUrl.pathname.split('/').pop();
+    const { db } = await connectToDatabase();
 
-    const { id } = params;
-    if (!id) {
-      return NextResponse.json({ error: 'Invalid movie ID' }, { status: 400 });
+    const result = await db.collection('genres').findOneAndDelete({
+      _id: new ObjectId(id)
+    });
+
+    if (!result) {
+      return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
     }
 
-    const movie = await Movie.findByIdAndDelete(id);
-    if (!movie) {
-      return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(movie, { status: 200 });
+    return NextResponse.json({ message: 'Genre deleted successfully' }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete movie' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Record<string, string> }) {
+export async function PUT(request: NextRequest) {
   try {
-    await connectToDatabase();
-    const data = await request.json();
+    const id = request.nextUrl.pathname.split('/').pop();
+    const { name } = await request.json();
 
-    const { id } = params;
-    if (!id) {
-      return NextResponse.json({ error: 'Invalid movie ID' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Đảm bảo cập nhật isSeen nếu có
-    const updateData = {
-      ...data,
-      updatedAt: Date.now(),
-      isSeen: typeof data.isSeen === 'boolean' ? data.isSeen : undefined
-    };
+    const { db } = await connectToDatabase();
 
-    const movie = await Movie.findByIdAndUpdate(id, updateData, { new: true });
+    // Kiểm tra trùng tên với các thể loại khác
+    const existingGenre = await db.collection('genres').findOne({
+      _id: { $ne: new ObjectId(id) },
+      name: { $regex: new RegExp(`^${name}$`, 'i') }
+    });
 
-    if (!movie) {
-      return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
+    if (existingGenre) {
+      return NextResponse.json({ error: 'Thể loại này đã tồn tại' }, { status: 400 });
     }
 
-    return NextResponse.json({
-      ...movie.toObject(),
-      _id: movie._id.toString(),
-      isSeen: movie.isSeen
-    }, { status: 200 });
+    const result = await db.collection('genres').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { name, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
 
+    if (!result) {
+      return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update movie' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

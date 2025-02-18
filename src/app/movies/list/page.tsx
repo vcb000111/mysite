@@ -160,10 +160,12 @@ export default function MovieList() {
   const [autoChangeImage, setAutoChangeImage] = useState(getAutoChangeImage());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [ratingSort, setRatingSort] = useState<'rating-desc' | 'rating-asc' | ''>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchMovies = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch('/api/movies');
         if (response.ok) {
           const data = await response.json();
@@ -171,6 +173,8 @@ export default function MovieList() {
         }
       } catch (error) {
         console.error('Error fetching movies:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -681,422 +685,478 @@ export default function MovieList() {
           </button>
         </div>
 
-        {/* Search bar */}
-        <div className="mb-6 space-y-4">
-          {/* Search controls */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo tiêu đề, mã phim, diễn viên, thể loại..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 rounded-lg border dark:border-gray-700 
-                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                  transition-all duration-200"
-              />
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2
-                    text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
-                    focus:outline-none focus:text-gray-600 dark:focus:text-gray-300
-                    transition-colors duration-200"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+        {/* Loading spinner */}
+        {isLoading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <div className="relative w-20 h-20">
+              <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
+              <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Loading</span>
+              </div>
             </div>
           </div>
-
-          {/* Filter controls */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Checkbox filters */}
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1 cursor-pointer">
+        ) : (
+          <>
+            {/* Search bar */}
+            <div className="mb-6 space-y-4">
+              {/* Search controls */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
                   <input
-                    type="checkbox"
-                    checked={showSeen}
-                    onChange={(e) => setShowSeen(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                      focus:ring-blue-500 dark:border-gray-600
-                      dark:focus:ring-offset-gray-800"
+                    type="text"
+                    placeholder="Tìm kiếm theo tiêu đề, mã phim, diễn viên, thể loại..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2 rounded-lg border dark:border-gray-700 
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Đã xem
-                  </span>
-                </label>
+                  <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
 
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showFavorite}
-                    onChange={(e) => setShowFavorite(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                      focus:ring-blue-500 dark:border-gray-600
-                      dark:focus:ring-offset-gray-800"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Yêu thích
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showRandom}
-                    onChange={(e) => setShowRandom(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                      focus:ring-blue-500 dark:border-gray-600
-                      dark:focus:ring-offset-gray-800"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Ngẫu nhiên
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoChangeImage}
-                    onChange={(e) => {
-                      const newValue = e.target.checked;
-                      setAutoChangeImage(newValue);
-                      saveAutoChangeImage(newValue); // Lưu vào localStorage
-                      if (!newValue) {
-                        // Thêm hiệu ứng fade khi reset về poster
-                        setIsFading(prev => {
-                          const newFading = { ...prev };
-                          movies.forEach(movie => {
-                            if (currentImageIndexes[movie._id] !== undefined) {
-                              newFading[movie._id] = true;
-                            }
-                          });
-                          return newFading;
-                        });
-
-                        // Reset về poster sau khi fade out
-                        setTimeout(() => {
-                          setCurrentImageIndexes({});
-                          setIsFading({});
-                        }, 700);
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                      focus:ring-blue-500 dark:border-gray-600
-                      dark:focus:ring-offset-gray-800"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Tự động chuyển ảnh
-                  </span>
-                </label>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2
+                        text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+                        focus:outline-none focus:text-gray-600 dark:focus:text-gray-300
+                        transition-colors duration-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Actress select */}
-              <select
-                value={selectedActress}
-                onChange={(e) => setSelectedActress(e.target.value)}
-                className="px-2 py-1 rounded-lg border dark:border-gray-700
-                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                  transition-all duration-200 text-sm"
-              >
-                <option value="">Tất cả diễn viên</option>
-                {allActresses.map(actress => (
-                  <option key={actress} value={actress}>{actress}</option>
-                ))}
-              </select>
+              {/* Filter controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Checkbox filters */}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showSeen}
+                        onChange={(e) => setShowSeen(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
+                          focus:ring-blue-500 dark:border-gray-600
+                          dark:focus:ring-offset-gray-800"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Đã xem
+                      </span>
+                    </label>
 
-              {/* Genre select */}
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                className="px-2 py-1 rounded-lg border dark:border-gray-700
-                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                  transition-all duration-200 text-sm"
-              >
-                <option value="">Tất cả thể loại</option>
-                {allGenres.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
-              </select>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showFavorite}
+                        onChange={(e) => setShowFavorite(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
+                          focus:ring-blue-500 dark:border-gray-600
+                          dark:focus:ring-offset-gray-800"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Yêu thích
+                      </span>
+                    </label>
 
-              {/* Sort select */}
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                className="px-2 py-1 rounded-lg border dark:border-gray-700
-                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                  transition-all duration-200 text-sm"
-              >
-                <option value="added">Ngày thêm</option>
-                <option value="newest">Ngày phát hành (Mới nhất)</option>
-                <option value="oldest">Ngày phát hành (Cũ nhất)</option>
-              </select>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showRandom}
+                        onChange={(e) => setShowRandom(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
+                          focus:ring-blue-500 dark:border-gray-600
+                          dark:focus:ring-offset-gray-800"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Ngẫu nhiên
+                      </span>
+                    </label>
 
-              {/* Rating sort select */}
-              <select
-                value={ratingSort}
-                onChange={(e) => setRatingSort(e.target.value as 'rating-desc' | 'rating-asc' | '')}
-                className="px-2 py-1 rounded-lg border dark:border-gray-700
-                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
-                  transition-all duration-200 text-sm"
-              >
-                <option value="">Đánh giá (Mặc định)</option>
-                <option value="rating-desc">Đánh giá (Cao đến thấp)</option>
-                <option value="rating-asc">Đánh giá (Thấp đến cao)</option>
-              </select>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoChangeImage}
+                        onChange={(e) => {
+                          const newValue = e.target.checked;
+                          setAutoChangeImage(newValue);
+                          saveAutoChangeImage(newValue); // Lưu vào localStorage
+                          if (!newValue) {
+                            // Thêm hiệu ứng fade khi reset về poster
+                            setIsFading(prev => {
+                              const newFading = { ...prev };
+                              movies.forEach(movie => {
+                                if (currentImageIndexes[movie._id] !== undefined) {
+                                  newFading[movie._id] = true;
+                                }
+                              });
+                              return newFading;
+                            });
+
+                            // Reset về poster sau khi fade out
+                            setTimeout(() => {
+                              setCurrentImageIndexes({});
+                              setIsFading({});
+                            }, 700);
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
+                          focus:ring-blue-500 dark:border-gray-600
+                          dark:focus:ring-offset-gray-800"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Tự động chuyển ảnh
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Actress select */}
+                  <select
+                    value={selectedActress}
+                    onChange={(e) => setSelectedActress(e.target.value)}
+                    className="px-2 py-1 rounded-lg border dark:border-gray-700
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200 text-sm"
+                  >
+                    <option value="">Tất cả diễn viên</option>
+                    {allActresses.map(actress => (
+                      <option key={actress} value={actress}>{actress}</option>
+                    ))}
+                  </select>
+
+                  {/* Genre select */}
+                  <select
+                    value={selectedGenre}
+                    onChange={(e) => setSelectedGenre(e.target.value)}
+                    className="px-2 py-1 rounded-lg border dark:border-gray-700
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200 text-sm"
+                  >
+                    <option value="">Tất cả thể loại</option>
+                    {allGenres.map(genre => (
+                      <option key={genre} value={genre}>{genre}</option>
+                    ))}
+                  </select>
+
+                  {/* Sort select */}
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                    className="px-2 py-1 rounded-lg border dark:border-gray-700
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200 text-sm"
+                  >
+                    <option value="added">Ngày thêm</option>
+                    <option value="newest">Ngày phát hành (Mới nhất)</option>
+                    <option value="oldest">Ngày phát hành (Cũ nhất)</option>
+                  </select>
+
+                  {/* Rating sort select */}
+                  <select
+                    value={ratingSort}
+                    onChange={(e) => setRatingSort(e.target.value as 'rating-desc' | 'rating-asc' | '')}
+                    className="px-2 py-1 rounded-lg border dark:border-gray-700
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200 text-sm"
+                  >
+                    <option value="">Đánh giá (Mặc định)</option>
+                    <option value="rating-desc">Đánh giá (Cao đến thấp)</option>
+                    <option value="rating-asc">Đánh giá (Thấp đến cao)</option>
+                  </select>
+                </div>
+
+                {/* Reset button */}
+                {(searchTerm || showSeen || showFavorite || selectedGenre || selectedActress) && (
+                  <button
+                    onClick={resetAllFilters}
+                    className="px-2 py-1 rounded-lg text-sm
+                      bg-gray-100 hover:bg-gray-200 
+                      dark:bg-gray-700 dark:hover:bg-gray-600
+                      text-gray-600 dark:text-gray-300
+                      transition-colors duration-200
+                      flex items-center gap-1"
+                  >
+                    <X className="w-4 h-4" />
+                    Xóa bộ lọc
+                  </button>
+                )}
+              </div>
+
+              {/* Results count */}
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {filteredMovies.length === movies.length ? (
+                  <span>Tổng số {movies.length} phim</span>
+                ) : (
+                  <span>Hiển thị {filteredMovies.length}/{movies.length} phim</span>
+                )}
+              </div>
             </div>
 
-            {/* Reset button */}
-            {(searchTerm || showSeen || showFavorite || selectedGenre || selectedActress) && (
-              <button
-                onClick={resetAllFilters}
-                className="px-2 py-1 rounded-lg text-sm
-                  bg-gray-100 hover:bg-gray-200 
-                  dark:bg-gray-700 dark:hover:bg-gray-600
-                  text-gray-600 dark:text-gray-300
-                  transition-colors duration-200
-                  flex items-center gap-1"
-              >
-                <X className="w-4 h-4" />
-                Xóa bộ lọc
-              </button>
-            )}
-          </div>
-
-          {/* Results count */}
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {filteredMovies.length === movies.length ? (
-              <span>Tổng số {movies.length} phim</span>
-            ) : (
-              <span>Hiển thị {filteredMovies.length}/{movies.length} phim</span>
-            )}
-          </div>
-        </div>
-
-        {/* Movie grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredMovies.map(movie => (
-            <div
-              key={movie._id}
-              className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-md border border-gray-100 dark:border-gray-700
-                hover:shadow-lg transition-all duration-200"
-            >
-              {/* Poster */}
-              <div className="relative overflow-hidden group aspect-video">
-                {/* Ảnh hiện tại */}
-                <img
-                  key={currentImageIndexes[movie._id] || 0}
-                  src={(() => {
-                    const allImages = [movie.poster, ...(movie.images || [])];
-                    const currentIndex = currentImageIndexes[movie._id] || 0;
-                    return allImages[currentIndex] || movie.poster;
-                  })()}
-                  alt={movie.title}
-                  className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
-                    transition-opacity duration-700 ease-in-out
-                    bg-gray-100 dark:bg-gray-800 cursor-pointer
-                    ${isFading[movie._id] ? 'opacity-0' : 'opacity-100'}`}
-                  onClick={() => {
-                    setPreviewImage(movie.poster);
-                    setPreviewImages([movie.poster, ...(movie.images || [])]);
-                  }}
-                />
-
-                {/* Ảnh tiếp theo (để fade) */}
-                <img
-                  key={`next-${currentImageIndexes[movie._id] || 0}`}
-                  src={(() => {
-                    if (isFading[movie._id] && !autoChangeImage) {
-                      // Khi đang fade và tắt auto change, hiển thị poster
-                      return movie.poster;
-                    }
-                    const allImages = [movie.poster, ...(movie.images || [])];
-                    const currentIndex = currentImageIndexes[movie._id] || 0;
-                    const nextIndex = (currentIndex + 1) % allImages.length;
-                    return allImages[nextIndex] || movie.poster;
-                  })()}
-                  alt={movie.title}
-                  className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
-                    transition-opacity duration-700 ease-in-out
-                    bg-gray-100 dark:bg-gray-800
-                    ${isFading[movie._id] ? 'opacity-100' : 'opacity-0'}`}
-                />
-
-                {/* Overlay cho hover effect */}
-                <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-110">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                {/* Seen badge */}
-                {movie.isSeen && (
-                  <div className="absolute top-3 left-3 bg-white/90 dark:bg-gray-800/90 
-                    p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
-                  >
-                    <Eye className="w-4 h-4 text-green-500" fill="currentColor" />
-                  </div>
-                )}
-
-                {/* Genre badge */}
-                <div className="absolute bottom-3 left-3 z-10">
-                  <button
-                    onClick={() => setSelectedGenre(movie.genre[0] || '')}
-                    className="px-2 py-1 text-xs rounded-md
-                      bg-black/70 backdrop-blur-sm
-                      text-white font-medium
-                      hover:bg-black/80 transition-colors duration-200"
-                  >
-                    {movie.genre[0] || 'N/A'}
-                  </button>
-                </div>
-
-                {/* Year badge */}
-                <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm
-                  px-2 py-1 rounded-md text-white text-sm font-medium z-10"
+            {/* Movie grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredMovies.map(movie => (
+                <div
+                  key={movie._id}
+                  className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-md border border-gray-100 dark:border-gray-700
+                    hover:shadow-lg transition-all duration-200"
                 >
-                  {new Date(movie.releaseDate).toLocaleDateString('vi-VN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                  }).split('/').join('-')}
-                </div>
+                  {/* Poster */}
+                  <div className="relative overflow-hidden group aspect-video">
+                    {/* Ảnh hiện tại */}
+                    <img
+                      key={currentImageIndexes[movie._id] || 0}
+                      src={(() => {
+                        const allImages = [movie.poster, ...(movie.images || [])];
+                        const currentIndex = currentImageIndexes[movie._id] || 0;
+                        return allImages[currentIndex] || movie.poster;
+                      })()}
+                      alt={movie.title}
+                      className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
+                        transition-opacity duration-700 ease-in-out
+                        bg-gray-100 dark:bg-gray-800 cursor-pointer
+                        ${isFading[movie._id] ? 'opacity-0' : 'opacity-100'}`}
+                      onClick={() => {
+                        setPreviewImage(movie.poster);
+                        setPreviewImages([movie.poster, ...(movie.images || [])]);
+                      }}
+                    />
 
-                {/* Favorite badge */}
-                {movie.isFavorite && (
-                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 
-                    p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
-                  >
-                    <Heart className="w-4 h-4 text-red-500" fill="currentColor" />
-                  </div>
-                )}
+                    {/* Ảnh tiếp theo (để fade) */}
+                    <img
+                      key={`next-${currentImageIndexes[movie._id] || 0}`}
+                      src={(() => {
+                        if (isFading[movie._id] && !autoChangeImage) {
+                          // Khi đang fade và tắt auto change, hiển thị poster
+                          return movie.poster;
+                        }
+                        const allImages = [movie.poster, ...(movie.images || [])];
+                        const currentIndex = currentImageIndexes[movie._id] || 0;
+                        const nextIndex = (currentIndex + 1) % allImages.length;
+                        return allImages[nextIndex] || movie.poster;
+                      })()}
+                      alt={movie.title}
+                      className={`absolute inset-0 w-full h-full object-cover object-top rounded-t-xl 
+                        transition-opacity duration-700 ease-in-out
+                        bg-gray-100 dark:bg-gray-800
+                        ${isFading[movie._id] ? 'opacity-100' : 'opacity-0'}`}
+                    />
 
-                {/* Overlay khi hover */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40
-                  transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
-                >
-                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                    {/* Action buttons */}
-                    <div className="flex items-center justify-center gap-2">
-                      {/* Seen button */}
-                      <button
-                        onClick={() => handleToggleSeen(movie._id, movie.isSeen)}
-                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                    {/* Overlay cho hover effect */}
+                    <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-110">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+
+                    {/* Seen badge */}
+                    {movie.isSeen && (
+                      <div className="absolute top-3 left-3 bg-white/90 dark:bg-gray-800/90 
+                        p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        {movie.isSeen ? (
-                          <Eye className="w-5 h-5 text-green-500" fill="currentColor" />
-                        ) : (
-                          <EyeOff className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
-
-                      {/* Favorite button */}
-                      <button
-                        onClick={() => handleToggleFavorite(movie._id, movie.isFavorite)}
-                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                      >
-                        {movie.isFavorite ? (
-                          <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
-                        ) : (
-                          <HeartOff className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
-
-                      {/* Preview button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewImage(movie.poster);
-                          setPreviewImages([movie.poster, ...(movie.images || [])]);
-                        }}
-                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                      >
-                        <Eye className="w-5 h-5 text-blue-500" />
-                      </button>
-
-                      {/* Rating button */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowRating(movie._id)}
-                          className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                            hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                        >
-                          <Star
-                            className="w-5 h-5 text-yellow-500"
-                            fill={movie.rating > 0 ? "currentColor" : "none"}
-                          />
-                        </button>
-
-                        {/* Rating popup */}
-                        {showRating === movie._id && (
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2
-                            bg-white dark:bg-gray-800 rounded-lg shadow-xl
-                            border border-gray-100 dark:border-gray-700
-                            transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100
-                            transition-all duration-200 z-50"
-                          >
-                            <div className="flex items-center gap-1 px-2 py-1">
-                              {[...Array(10)].map((_, index) => (
-                                <button
-                                  key={index}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRating(movie._id, index + 1);
-                                    setShowRating(null);
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    const stars = e.currentTarget.parentElement?.children;
-                                    if (stars) {
-                                      for (let i = 0; i <= index; i++) {
-                                        (stars[i] as HTMLElement).querySelector('svg')?.classList.add('text-yellow-500');
-                                        (stars[i] as HTMLElement).querySelector('svg')?.classList.add('fill-current');
-                                      }
-                                      for (let i = index + 1; i < stars.length; i++) {
-                                        (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('text-yellow-500');
-                                        (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('fill-current');
-                                      }
-                                    }
-                                  }}
-                                  onMouseLeave={() => {
-                                    if (!showRating) return;
-                                    const stars = document.querySelectorAll('.rating-star');
-                                    stars.forEach((star, i) => {
-                                      if (i < movie.rating) {
-                                        star.classList.add('text-yellow-500');
-                                        star.classList.add('fill-current');
-                                      } else {
-                                        star.classList.remove('text-yellow-500');
-                                        star.classList.remove('fill-current');
-                                      }
-                                    });
-                                  }}
-                                  className="p-1 hover:scale-110 transition-transform"
-                                >
-                                  <Star
-                                    className={`w-4 h-4 rating-star ${index < movie.rating
-                                      ? 'text-yellow-500 fill-current'
-                                      : 'text-gray-300 dark:text-gray-600'
-                                      }`}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        <Eye className="w-4 h-4 text-green-500" fill="currentColor" />
                       </div>
+                    )}
 
-                      {/* Edit button */}
+                    {/* Genre badge */}
+                    <div className="absolute bottom-3 left-3 z-10">
                       <button
+                        onClick={() => setSelectedGenre(movie.genre[0] || '')}
+                        className="px-2 py-1 text-xs rounded-md
+                          bg-black/70 backdrop-blur-sm
+                          text-white font-medium
+                          hover:bg-black/80 transition-colors duration-200"
+                      >
+                        {movie.genre[0] || 'N/A'}
+                      </button>
+                    </div>
+
+                    {/* Year badge */}
+                    <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm
+                      px-2 py-1 rounded-md text-white text-sm font-medium z-10"
+                    >
+                      {new Date(movie.releaseDate).toLocaleDateString('vi-VN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      }).split('/').join('-')}
+                    </div>
+
+                    {/* Favorite badge */}
+                    {movie.isFavorite && (
+                      <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 
+                        p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      >
+                        <Heart className="w-4 h-4 text-red-500" fill="currentColor" />
+                      </div>
+                    )}
+
+                    {/* Overlay khi hover */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40
+                      transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                        {/* Action buttons */}
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Seen button */}
+                          <button
+                            onClick={() => handleToggleSeen(movie._id, movie.isSeen)}
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                          >
+                            {movie.isSeen ? (
+                              <Eye className="w-5 h-5 text-green-500" fill="currentColor" />
+                            ) : (
+                              <EyeOff className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+
+                          {/* Favorite button */}
+                          <button
+                            onClick={() => handleToggleFavorite(movie._id, movie.isFavorite)}
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                          >
+                            {movie.isFavorite ? (
+                              <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
+                            ) : (
+                              <HeartOff className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+
+                          {/* Preview button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImage(movie.poster);
+                              setPreviewImages([movie.poster, ...(movie.images || [])]);
+                            }}
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                          >
+                            <Eye className="w-5 h-5 text-blue-500" />
+                          </button>
+
+                          {/* Rating button */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowRating(movie._id)}
+                              className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                                hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                            >
+                              <Star
+                                className="w-5 h-5 text-yellow-500"
+                                fill={movie.rating > 0 ? "currentColor" : "none"}
+                              />
+                            </button>
+
+                            {/* Rating popup */}
+                            {showRating === movie._id && (
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2
+                                bg-white dark:bg-gray-800 rounded-lg shadow-xl
+                                border border-gray-100 dark:border-gray-700
+                                transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100
+                                transition-all duration-200 z-50"
+                              >
+                                <div className="flex items-center gap-1 px-2 py-1">
+                                  {[...Array(10)].map((_, index) => (
+                                    <button
+                                      key={index}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRating(movie._id, index + 1);
+                                        setShowRating(null);
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        const stars = e.currentTarget.parentElement?.children;
+                                        if (stars) {
+                                          for (let i = 0; i <= index; i++) {
+                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.add('text-yellow-500');
+                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.add('fill-current');
+                                          }
+                                          for (let i = index + 1; i < stars.length; i++) {
+                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('text-yellow-500');
+                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('fill-current');
+                                          }
+                                        }
+                                      }}
+                                      onMouseLeave={() => {
+                                        if (!showRating) return;
+                                        const stars = document.querySelectorAll('.rating-star');
+                                        stars.forEach((star, i) => {
+                                          if (i < movie.rating) {
+                                            star.classList.add('text-yellow-500');
+                                            star.classList.add('fill-current');
+                                          } else {
+                                            star.classList.remove('text-yellow-500');
+                                            star.classList.remove('fill-current');
+                                          }
+                                        });
+                                      }}
+                                      className="p-1 hover:scale-110 transition-transform"
+                                    >
+                                      <Star
+                                        className={`w-4 h-4 rating-star ${index < movie.rating
+                                          ? 'text-yellow-500 fill-current'
+                                          : 'text-gray-300 dark:text-gray-600'
+                                          }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Edit button */}
+                          <button
+                            onClick={() => {
+                              setMovieInput({
+                                title: movie.title,
+                                code: movie.code,
+                                poster: movie.poster,
+                                releaseDate: movie.releaseDate,
+                                actress: movie.actress,
+                                genre: movie.genre,
+                                images: movie.images
+                              });
+                              setEditingMovie(movie);
+                              setShowModal(true);
+                            }}
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                          >
+                            <Edit className="w-5 h-5 text-blue-500" />
+                          </button>
+
+                          {/* Delete button */}
+                          <button
+                            onClick={() => setDeletingMovie(movie)}
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                          >
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Movie info */}
+                  <div className="p-4 space-y-2">
+                    {/* Title */}
+                    <div
+                      id={`movie-${movie._id}`}
+                      className="relative group h-[72px]"
+                    >
+                      <h3
+                        className="text-lg font-semibold text-gray-800 dark:text-white
+                          line-clamp-3 cursor-pointer leading-6 hover:text-blue-500 dark:hover:text-blue-400
+                          transition-colors duration-200"
                         onClick={() => {
                           setMovieInput({
                             title: movie.title,
@@ -1110,104 +1170,63 @@ export default function MovieList() {
                           setEditingMovie(movie);
                           setShowModal(true);
                         }}
-                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                       >
-                        <Edit className="w-5 h-5 text-blue-500" />
-                      </button>
+                        {movie.title}
+                      </h3>
+                    </div>
 
-                      {/* Delete button */}
-                      <button
-                        onClick={() => setDeletingMovie(movie)}
-                        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                      >
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
+                    {/* Code and Rating */}
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
+                        {movie.code.split('-').map((part, index) => (
+                          <React.Fragment key={index}>
+                            {index > 0 && (
+                              <span className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                                -
+                              </span>
+                            )}
+                            <button
+                              onClick={() => setSearchTerm(part)}
+                              className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 
+                                bg-clip-text text-transparent hover:from-blue-600 hover:to-purple-600
+                                transition-colors duration-200 focus:outline-none
+                                focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                                focus:ring-opacity-50 rounded px-0.5"
+                            >
+                              {part}
+                            </button>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                        {movie.rating || 0}
+                      </span>
+                    </div>
+
+                    {/* Actress */}
+                    <div className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2">
+                      {formatActressName(movie.actress).map((pair, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setSearchTerm(pair);
+                          }}
+                          className="hover:text-blue-500 dark:hover:text-blue-400 
+                            transition-colors duration-200 hover:underline
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                            focus:ring-opacity-50 rounded"
+                        >
+                          {pair}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Movie info */}
-              <div className="p-4 space-y-2">
-                {/* Title */}
-                <div
-                  id={`movie-${movie._id}`}
-                  className="relative group h-[72px]"
-                >
-                  <h3
-                    className="text-lg font-semibold text-gray-800 dark:text-white
-                      line-clamp-3 cursor-pointer leading-6 hover:text-blue-500 dark:hover:text-blue-400
-                      transition-colors duration-200"
-                    onClick={() => {
-                      setMovieInput({
-                        title: movie.title,
-                        code: movie.code,
-                        poster: movie.poster,
-                        releaseDate: movie.releaseDate,
-                        actress: movie.actress,
-                        genre: movie.genre,
-                        images: movie.images
-                      });
-                      setEditingMovie(movie);
-                      setShowModal(true);
-                    }}
-                  >
-                    {movie.title}
-                  </h3>
-                </div>
-
-                {/* Code and Rating */}
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
-                    {movie.code.split('-').map((part, index) => (
-                      <React.Fragment key={index}>
-                        {index > 0 && (
-                          <span className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                            -
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setSearchTerm(part)}
-                          className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 
-                            bg-clip-text text-transparent hover:from-blue-600 hover:to-purple-600
-                            transition-colors duration-200 focus:outline-none
-                            focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                            focus:ring-opacity-50 rounded px-0.5"
-                        >
-                          {part}
-                        </button>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                  <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                    <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-                    {movie.rating || 0}
-                  </span>
-                </div>
-
-                {/* Actress */}
-                <div className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2">
-                  {formatActressName(movie.actress).map((pair, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setSearchTerm(pair);
-                      }}
-                      className="hover:text-blue-500 dark:hover:text-blue-400 
-                        transition-colors duration-200 hover:underline
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                        focus:ring-opacity-50 rounded"
-                    >
-                      {pair}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {/* Modal */}
         {showModal && (

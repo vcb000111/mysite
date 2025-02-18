@@ -1,85 +1,57 @@
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
-import { NextRequest } from 'next/server';
+import Movie from '@/models/Movie';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const { name } = await request.json();
-    if (!name) {
-      return new Response(JSON.stringify({ error: 'Name is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    await connectToDatabase();
+
+    const { id } = params;
+    if (!id) {
+      return NextResponse.json({ error: 'Invalid movie ID' }, { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
-
-    // Kiểm tra trùng tên với các thể loại khác
-    const existingGenre = await db.collection('genres').findOne({
-      _id: { $ne: new ObjectId(context.params.id) },
-      name: { $regex: new RegExp(`^${name}$`, 'i') }
-    });
-
-    if (existingGenre) {
-      return new Response(JSON.stringify({ error: 'Thể loại này đã tồn tại' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const movie = await Movie.findByIdAndDelete(id);
+    if (!movie) {
+      return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
-    const result = await db.collection('genres').findOneAndUpdate(
-      { _id: new ObjectId(context.params.id) },
-      { $set: { name, updatedAt: new Date() } },
-      { returnDocument: 'after' }
-    );
-
-    if (!result) {
-      return new Response(JSON.stringify({ error: 'Genre not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json(movie, { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ error: 'Failed to delete movie' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Record<string, string> }) {
   try {
-    const { db } = await connectToDatabase();
-    const result = await db.collection('genres').findOneAndDelete({
-      _id: new ObjectId(context.params.id)
-    });
+    await connectToDatabase();
+    const data = await request.json();
 
-    if (!result) {
-      return new Response(JSON.stringify({ error: 'Genre not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const { id } = params;
+    if (!id) {
+      return NextResponse.json({ error: 'Invalid movie ID' }, { status: 400 });
     }
 
-    return new Response(JSON.stringify({ message: 'Genre deleted successfully' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Đảm bảo cập nhật isSeen nếu có
+    const updateData = {
+      ...data,
+      updatedAt: Date.now(),
+      isSeen: typeof data.isSeen === 'boolean' ? data.isSeen : undefined
+    };
+
+    const movie = await Movie.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!movie) {
+      return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ...movie.toObject(),
+      _id: movie._id.toString(),
+      isSeen: movie.isSeen
+    }, { status: 200 });
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ error: 'Failed to update movie' }, { status: 500 });
   }
-} 
+}

@@ -114,7 +114,7 @@ const getAutoChangeImage = (): boolean => {
 };
 
 // Cập nhật kiểu SortOrder
-type SortOrder = 'added' | 'newest' | 'oldest';
+type SortOrder = 'added' | 'newest' | 'oldest' | 'rating-desc' | 'rating-asc';
 
 // Thêm hàm helper để trích xuất đường dẫn ảnh từ HTML
 const extractImagesFromHtml = (html: string): string[] => {
@@ -159,6 +159,7 @@ export default function MovieList() {
   const [isFading, setIsFading] = useState<{ [key: string]: boolean }>({});
   const [autoChangeImage, setAutoChangeImage] = useState(getAutoChangeImage());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [ratingSort, setRatingSort] = useState<'rating-desc' | 'rating-asc' | ''>('');
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -246,6 +247,9 @@ export default function MovieList() {
         return;
       }
 
+      const parsedInfo = parseMovieInfo(pasteText);
+      const rating = parsedInfo?.rating || 0;
+
       const movieData = {
         title: movieInput.title,
         code: movieInput.code,
@@ -253,7 +257,7 @@ export default function MovieList() {
         poster: movieInput.poster || 'https://placehold.co/300x450',
         releaseDate: movieInput.releaseDate,
         year: new Date(movieInput.releaseDate).getFullYear(),
-        rating: 0,
+        rating: rating,
         genre: movieInput.genre,
         images: movieInput.images || [],
         isFavorite: false,
@@ -456,7 +460,7 @@ export default function MovieList() {
   const parseMovieInfo = (text: string) => {
     try {
       const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-      const info: Partial<MovieInput> = {};
+      const info: Partial<MovieInput & { rating?: number }> = {};
 
       // Parse title - lấy dòng đầu tiên có chứa chữ
       for (const line of lines) {
@@ -487,6 +491,14 @@ export default function MovieList() {
         if (castMatch) info.actress = castMatch[1].trim();
       }
 
+      // Parse rating
+      const ratingMatch = text.match(/\((\d+\.\d+)\)/);
+      if (ratingMatch) {
+        const rating = parseFloat(ratingMatch[1]);
+        // Làm tròn lên 1 nếu phần thập phân >= 0.5
+        info.rating = Math.floor(rating) + (rating % 1 >= 0.5 ? 1 : 0);
+      }
+
       // Log để debug
       console.log('Parsed Info:', info);
       console.log('Original Text:', text);
@@ -498,7 +510,7 @@ export default function MovieList() {
     }
   };
 
-  // Cập nhật hàm handlePaste để giữ nguyên genre hiện tại
+  // Cập nhật hàm handlePaste để thêm rating vào dữ liệu phim
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pastedText = e.clipboardData.getData('text');
     setPasteText(pastedText);
@@ -506,12 +518,23 @@ export default function MovieList() {
     // Tự động parse và áp dụng thông tin sau khi paste
     const parsedInfo = parseMovieInfo(pastedText);
     if (parsedInfo) {
+      const { rating, ...movieInfo } = parsedInfo;
       setMovieInput(prev => ({
         ...prev,
-        ...parsedInfo,
+        ...movieInfo,
         genre: prev.genre, // Giữ nguyên genre đã chọn
         images: prev.images || []
       }));
+
+      // Cập nhật rating nếu có
+      if (rating !== undefined) {
+        const movieData = {
+          ...movieInfo,
+          rating
+        };
+        console.log('Movie data with rating:', movieData);
+      }
+
       setPasteText('');
       setShowPasteArea(false);
       Toast.fire({
@@ -566,7 +589,13 @@ export default function MovieList() {
         return matchesSearch && matchesFilters && matchesGenre && matchesActress;
       })
       .sort((a, b) => {
-        if (sortOrder === 'added') {
+        if (ratingSort === 'rating-desc') {
+          // Sắp xếp theo rating giảm dần
+          return (b.rating || 0) - (a.rating || 0);
+        } else if (ratingSort === 'rating-asc') {
+          // Sắp xếp theo rating tăng dần
+          return (a.rating || 0) - (b.rating || 0);
+        } else if (sortOrder === 'added') {
           // Sắp xếp theo createdAt (ngày thêm phim)
           const timeA = new Date(a.createdAt).getTime();
           const timeB = new Date(b.createdAt).getTime();
@@ -585,7 +614,7 @@ export default function MovieList() {
     }
 
     return filtered;
-  }, [movies, searchTerm, showSeen, showFavorite, selectedGenre, sortOrder, showRandom, selectedActress]);
+  }, [movies, searchTerm, showSeen, showFavorite, selectedGenre, sortOrder, showRandom, selectedActress, ratingSort]);
 
   // Thêm hàm reset
   const resetAllFilters = () => {
@@ -595,6 +624,7 @@ export default function MovieList() {
     setShowRandom(false);
     setSelectedGenre('');
     setSelectedActress('');
+    setRatingSort('');
   };
 
   // Thêm hàm xử lý enter
@@ -808,6 +838,20 @@ export default function MovieList() {
                 <option value="added">Ngày thêm</option>
                 <option value="newest">Ngày phát hành (Mới nhất)</option>
                 <option value="oldest">Ngày phát hành (Cũ nhất)</option>
+              </select>
+
+              {/* Rating sort select */}
+              <select
+                value={ratingSort}
+                onChange={(e) => setRatingSort(e.target.value as 'rating-desc' | 'rating-asc' | '')}
+                className="px-2 py-1 rounded-lg border dark:border-gray-700
+                  bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                  transition-all duration-200 text-sm"
+              >
+                <option value="">Đánh giá (Mặc định)</option>
+                <option value="rating-desc">Đánh giá (Cao đến thấp)</option>
+                <option value="rating-asc">Đánh giá (Thấp đến cao)</option>
               </select>
             </div>
 

@@ -1,13 +1,12 @@
 import { connectToDatabase } from '@/lib/mongodb';
-import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const { db } = await connectToDatabase();
     const genres = await db.collection('genres').find({}).sort({ createdAt: -1 }).toArray();
-    return NextResponse.json(genres);
+    return Response.json(genres);
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -15,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const { name } = await request.json();
     if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return Response.json({ error: 'Name is required' }, { status: 400 });
     }
 
     const { db } = await connectToDatabase();
@@ -26,7 +25,7 @@ export async function POST(request: Request) {
     });
 
     if (existingGenre) {
-      return NextResponse.json({ error: 'Thể loại này đã tồn tại' }, { status: 400 });
+      return Response.json({ error: 'Thể loại này đã tồn tại' }, { status: 400 });
     }
 
     const result = await db.collection('genres').insertOne({
@@ -34,12 +33,12 @@ export async function POST(request: Request) {
       createdAt: new Date(),
     });
 
-    return NextResponse.json({
+    return Response.json({
       _id: result.insertedId,
       name,
       createdAt: new Date(),
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 } 

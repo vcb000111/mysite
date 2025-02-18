@@ -1,33 +1,32 @@
-import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Movie from '@/models/Movie';
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+type Context = {
+  params: {
+    id: string;
+  };
+};
+
+export async function DELETE(request: Request, context: Context) {
   try {
     await connectToDatabase();
-    const movie = await Movie.findByIdAndDelete(params.id);
+    const movie = await Movie.findByIdAndDelete(context.params.id);
     if (!movie) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Movie not found' },
         { status: 404 }
       );
     }
-    return NextResponse.json(movie);
+    return Response.json(movie);
   } catch (error) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to delete movie' },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, context: Context) {
   try {
     await connectToDatabase();
     const data = await request.json();
@@ -40,25 +39,25 @@ export async function PUT(
     };
 
     const movie = await Movie.findByIdAndUpdate(
-      params.id,
+      context.params.id,
       updateData,
       { new: true }
     );
 
     if (!movie) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Movie not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
+    return Response.json({
       ...movie.toObject(),
       _id: movie._id.toString(),
       isSeen: movie.isSeen
     });
   } catch (error) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to update movie' },
       { status: 500 }
     );

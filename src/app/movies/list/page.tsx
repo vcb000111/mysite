@@ -668,8 +668,8 @@ export default function MovieList() {
   };
 
   return (
-    <div className="w-full p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+    <div className="w-full md:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg md:p-6 p-2 border border-gray-100 dark:border-gray-700">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold animate-gradient">Danh sách phim</h1>
@@ -900,7 +900,7 @@ export default function MovieList() {
             </div>
 
             {/* Movie grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 gap-2">
               {filteredMovies.map(movie => (
                 <div
                   key={movie._id}

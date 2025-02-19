@@ -142,7 +142,7 @@ function Categories() {
   return (
     <div className="w-full md:p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center md:mb-6 mb-2">
           <h1 className="text-2xl font-bold animate-gradient">Quản lý thể loại</h1>
           <button
             onClick={() => {

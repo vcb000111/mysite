@@ -84,7 +84,8 @@ const formatActressName = (actress: string) => {
 
 // Thêm hàm helper để làm việc với localStorage
 const LAST_SELECTED_GENRES_KEY = 'lastSelectedGenres';
-const AUTO_CHANGE_IMAGE_KEY = 'autoChangeImage'; // Thêm key mới
+const AUTO_CHANGE_IMAGE_KEY = 'autoChangeImage';
+const ITEMS_PER_PAGE_KEY = 'itemsPerPage'; // Thêm key mới
 
 const saveLastSelectedGenres = (genres: string[]) => {
   localStorage.setItem(LAST_SELECTED_GENRES_KEY, JSON.stringify(genres));
@@ -100,6 +101,19 @@ const getLastSelectedGenres = (): string[] => {
 };
 
 // Thêm các hàm helper mới
+const saveItemsPerPage = (count: number) => {
+  localStorage.setItem(ITEMS_PER_PAGE_KEY, count.toString());
+};
+
+const getItemsPerPage = (): number => {
+  try {
+    const saved = localStorage.getItem(ITEMS_PER_PAGE_KEY);
+    return saved ? parseInt(saved, 10) : 20;
+  } catch {
+    return 20;
+  }
+};
+
 const saveAutoChangeImage = (enabled: boolean) => {
   localStorage.setItem(AUTO_CHANGE_IMAGE_KEY, JSON.stringify(enabled));
 };
@@ -137,12 +151,12 @@ export default function MovieList() {
     poster: '',
     releaseDate: '',
     actress: '',
-    genre: getLastSelectedGenres(), // Khởi tạo với genres đã lưu
+    genre: getLastSelectedGenres(),
     images: []
   });
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
   const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
-  const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState<{ id: string; text: string; position: string } | null>(null);
   const [showRating, setShowRating] = useState<string | null>(null);
   const [showPasteArea, setShowPasteArea] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -161,6 +175,8 @@ export default function MovieList() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [ratingSort, setRatingSort] = useState<'rating-desc' | 'rating-asc' | ''>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(getItemsPerPage());
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -667,11 +683,29 @@ export default function MovieList() {
     resetForm();
   };
 
+  // Cập nhật useEffect để reset trang khi thay đổi bộ lọc
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, showSeen, showFavorite, selectedGenre, selectedActress, showRandom]);
+
+  // Tính toán số trang và phim hiển thị
+  const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
+  const paginatedMovies = filteredMovies.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Thêm hàm điều hướng trang
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="w-full md:p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg md:p-6 p-2 border border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-lg md:p-6 p-2 border border-gray-100 dark:border-gray-700">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center md:mb-6 mb-2">
           <h1 className="text-2xl font-bold animate-gradient">Danh sách phim</h1>
           <button
             onClick={() => {
@@ -699,7 +733,7 @@ export default function MovieList() {
         ) : (
           <>
             {/* Search bar */}
-            <div className="mb-6 space-y-4">
+            <div className="md:mb-6 mb-2 space-y-4">
               {/* Search controls */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
@@ -889,19 +923,41 @@ export default function MovieList() {
                 )}
               </div>
 
-              {/* Results count */}
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {filteredMovies.length === movies.length ? (
-                  <span>Tổng số {movies.length} phim</span>
-                ) : (
-                  <span>Hiển thị {filteredMovies.length}/{movies.length} phim</span>
-                )}
+              {/* Results count và Items per page */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div>
+                  {filteredMovies.length === movies.length ? (
+                    <span>Tổng số {movies.length} phim</span>
+                  ) : (
+                    <span>Hiển thị {filteredMovies.length}/{movies.length} phim</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Số phim mỗi trang:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      const newValue = Number(e.target.value);
+                      setItemsPerPage(newValue);
+                      setCurrentPage(1);
+                      saveItemsPerPage(newValue); // Lưu vào localStorage khi thay đổi
+                    }}
+                    className="px-2 py-1 rounded-lg border dark:border-gray-700
+                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+                      transition-all duration-200"
+                  >
+                    {[20, 50, 100, 200, 500].map(value => (
+                      <option key={value} value={value}>{value}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Movie grid */}
+            {/* Movie grid - Cập nhật để sử dụng paginatedMovies */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 gap-2">
-              {filteredMovies.map(movie => (
+              {paginatedMovies.map(movie => (
                 <div
                   key={movie._id}
                   className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-md border border-gray-100 dark:border-gray-700
@@ -1028,19 +1084,6 @@ export default function MovieList() {
                             )}
                           </button>
 
-                          {/* Preview button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage(movie.poster);
-                              setPreviewImages([movie.poster, ...(movie.images || [])]);
-                            }}
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
-                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                          >
-                            <Eye className="w-5 h-5 text-blue-500" />
-                          </button>
-
                           {/* Rating button */}
                           <div className="relative">
                             <button
@@ -1147,7 +1190,7 @@ export default function MovieList() {
                   </div>
 
                   {/* Movie info */}
-                  <div className="p-4 space-y-2">
+                  <div className="md:p-4 p-2 space-y-2">
                     {/* Title */}
                     <div
                       id={`movie-${movie._id}`}
@@ -1170,33 +1213,83 @@ export default function MovieList() {
                           setEditingMovie(movie);
                           setShowModal(true);
                         }}
+                        onMouseEnter={(e) => {
+                          const element = e.currentTarget;
+                          const rect = element.getBoundingClientRect();
+                          const viewportWidth = window.innerWidth;
+                          const tooltipWidth = 300; // Độ rộng cố định của tooltip
+
+                          // Kiểm tra xem có đủ không gian bên phải không
+                          const spaceOnRight = viewportWidth - rect.right;
+                          const showOnRight = spaceOnRight >= tooltipWidth;
+
+                          // Chỉ hiện tooltip nếu nội dung bị cắt
+                          if (element.scrollHeight > element.clientHeight) {
+                            setShowTooltip({
+                              id: movie._id,
+                              text: movie.title,
+                              position: showOnRight ? 'right' : 'left'
+                            });
+                          }
+                        }}
+                        onMouseLeave={() => setShowTooltip(null)}
                       >
                         {movie.title}
                       </h3>
+
+                      {/* Tooltip */}
+                      {showTooltip?.id === movie._id && (
+                        <div
+                          className={`absolute z-50 w-[300px] p-3 bg-white dark:bg-gray-800 
+                            rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
+                            text-gray-900 dark:text-white text-sm
+                            ${showTooltip.position === 'right' ? 'left-full ml-2' : 'right-full mr-2'}
+                            top-0`}
+                        >
+                          {showTooltip.text}
+                        </div>
+                      )}
                     </div>
 
                     {/* Code and Rating */}
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
-                        {movie.code.split('-').map((part, index) => (
-                          <React.Fragment key={index}>
-                            {index > 0 && (
-                              <span className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                                -
-                              </span>
-                            )}
-                            <button
-                              onClick={() => setSearchTerm(part)}
-                              className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-500 
-                                bg-clip-text text-transparent hover:from-blue-600 hover:to-purple-600
-                                transition-colors duration-200 focus:outline-none
-                                focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                                focus:ring-opacity-50 rounded px-0.5"
-                            >
-                              {part}
-                            </button>
-                          </React.Fragment>
-                        ))}
+                        {movie.code.split('-').map((part, index) => {
+                          // Tạo mảng các gradient colors
+                          const gradientColors = [
+                            'from-blue-500 to-purple-500',
+                            'from-pink-500 to-rose-500',
+                            'from-green-500 to-teal-500',
+                            'from-orange-500 to-red-500',
+                            'from-indigo-500 to-blue-500',
+                            'from-yellow-500 to-orange-500',
+                            'from-purple-500 to-pink-500',
+                            'from-teal-500 to-cyan-500'
+                          ];
+
+                          // Lấy màu gradient dựa trên index của phần mã phim
+                          const gradient = gradientColors[index % gradientColors.length];
+
+                          return (
+                            <React.Fragment key={index}>
+                              {index > 0 && (
+                                <span className="animate-gradient text-base font-bold">
+                                  -
+                                </span>
+                              )}
+                              <button
+                                onClick={() => setSearchTerm(part)}
+                                className={`text-base font-bold animate-gradient
+                                  hover:opacity-75 transition-opacity duration-200 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                  dark:focus:ring-blue-400 focus:ring-opacity-50 
+                                  rounded px-0.5`}
+                              >
+                                {part}
+                              </button>
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                       <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                         <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
@@ -1204,27 +1297,141 @@ export default function MovieList() {
                       </span>
                     </div>
 
-                    {/* Actress */}
-                    <div className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2">
-                      {formatActressName(movie.actress).map((pair, index) => (
+                    {/* Actress và Image count */}
+                    <div className="text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
+                      <div className="flex flex-wrap gap-2">
+                        {formatActressName(movie.actress).map((pair, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              setSearchTerm(pair);
+                            }}
+                            className="hover:text-blue-500 dark:hover:text-blue-400 
+                              transition-colors duration-200 hover:underline
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                              focus:ring-opacity-50 rounded"
+                          >
+                            {pair}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Image count */}
+                      {(movie.images?.length > 0 || movie.poster) && (
                         <button
-                          key={index}
                           onClick={() => {
-                            setSearchTerm(pair);
+                            setPreviewImage(movie.poster);
+                            setPreviewImages([movie.poster, ...(movie.images || [])]);
                           }}
-                          className="hover:text-blue-500 dark:hover:text-blue-400 
-                            transition-colors duration-200 hover:underline
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                            focus:ring-opacity-50 rounded"
+                          className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 
+                            dark:bg-gray-700 dark:hover:bg-gray-600 px-2 py-1 rounded-lg
+                            transition-colors duration-200 group cursor-pointer"
+                          title="Nhấn để xem tất cả ảnh"
                         >
-                          {pair}
+                          <svg xmlns="http://www.w3.org/2000/svg"
+                            className="w-4 h-4 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 
+                              transition-colors duration-200"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200">
+                            {(movie.images?.length || 0) + (movie.poster ? 1 : 0)}
+                          </span>
                         </button>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                    ${currentPage === 1
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Đầu
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                    ${currentPage === 1
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Trước
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium
+                          ${currentPage === pageNumber
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                    ${currentPage === totalPages
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Sau
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                    ${currentPage === totalPages
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Cuối
+                </button>
+
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Trang {currentPage}/{totalPages}
+                </span>
+              </div>
+            )}
           </>
         )}
 
@@ -1235,10 +1442,10 @@ export default function MovieList() {
             onClick={handleCloseModal}
           >
             <div
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto md:p-6 p-2"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center md:mb-4 mb-2">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {editingMovie ? 'Sửa phim' : 'Thêm phim mới'}
                 </h2>

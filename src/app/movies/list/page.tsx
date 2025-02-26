@@ -177,6 +177,12 @@ export default function MovieList() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(getItemsPerPage());
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [showScrollButtons, setShowScrollButtons] = useState<{ top: boolean; bottom: boolean }>({
+    top: false,
+    bottom: true
+  });
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -256,6 +262,38 @@ export default function MovieList() {
 
     return () => clearInterval(interval);
   }, [movies, autoChangeImage]); // Thêm autoChangeImage vào dependencies
+
+  // Thêm useEffect để theo dõi scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+
+      // Hiện nút "To Top" khi scroll xuống 200px
+      setShowScrollButtons(prev => ({
+        ...prev,
+        top: scrollTop > 200,
+        // Ẩn nút "To Bottom" khi gần cuối trang (còn cách 50px)
+        bottom: scrollTop + clientHeight < scrollHeight - 50
+      }));
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Thêm hàm xử lý scroll
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+  };
 
   const handleAddMovie = async () => {
     try {
@@ -701,8 +739,79 @@ export default function MovieList() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Thêm các hàm xử lý touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd || !previewImage) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe || isRightSwipe) {
+      const currentIndex = previewImages.indexOf(previewImage);
+      let newIndex;
+
+      if (isLeftSwipe) {
+        // Swipe sang trái -> ảnh tiếp theo
+        newIndex = currentIndex < previewImages.length - 1 ? currentIndex + 1 : 0;
+      } else {
+        // Swipe sang phải -> ảnh trước đó
+        newIndex = currentIndex > 0 ? currentIndex - 1 : previewImages.length - 1;
+      }
+
+      setPreviewImage(previewImages[newIndex]);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   return (
     <div className="w-full md:p-4">
+      {/* Scroll buttons */}
+      <div className="fixed md:right-4 right-2 md:bottom-4 bottom-20 flex flex-col gap-2 z-40">
+        {showScrollButtons.top && (
+          <button
+            onClick={scrollToTop}
+            className="p-2 md:p-3 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg
+              hover:bg-white dark:hover:bg-gray-700
+              text-gray-600 dark:text-gray-300
+              transition-all duration-200 backdrop-blur-sm
+              transform hover:scale-110 active:scale-95"
+            title="Lên đầu trang"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="md:h-6 md:w-6 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        )}
+
+        {showScrollButtons.bottom && (
+          <button
+            onClick={scrollToBottom}
+            className="p-2 md:p-3 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg
+              hover:bg-white dark:hover:bg-gray-700
+              text-gray-600 dark:text-gray-300
+              transition-all duration-200 backdrop-blur-sm
+              transform hover:scale-110 active:scale-95"
+            title="Xuống cuối trang"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="md:h-6 md:w-6 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+        )}
+      </div>
+
       <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-lg md:p-6 p-2 border border-gray-100 dark:border-gray-700">
         {/* Header */}
         <div className="flex justify-between items-center md:mb-6 mb-2">
@@ -1018,17 +1127,31 @@ export default function MovieList() {
                       </div>
                     )}
 
-                    {/* Genre badge */}
+                    {/* Genre badges */}
                     <div className="absolute bottom-3 left-3 z-10">
-                      <button
-                        onClick={() => setSelectedGenre(movie.genre[0] || '')}
-                        className="px-2 py-1 text-xs rounded-md
-                          bg-black/70 backdrop-blur-sm
-                          text-white font-medium
-                          hover:bg-black/80 transition-colors duration-200"
-                      >
-                        {movie.genre[0] || 'N/A'}
-                      </button>
+                      <div className="flex flex-col space-y-1">
+                        {movie.genre.slice(0, 3).map((genre, index) => (
+                          <button
+                            key={genre}
+                            onClick={() => setSelectedGenre(genre)}
+                            className="px-2 py-1 text-xs rounded-md text-left
+                              bg-black/70 backdrop-blur-sm
+                              text-white font-medium w-fit
+                              hover:bg-black/80 transition-colors duration-200"
+                            style={{
+                              zIndex: 30 - index
+                            }}
+                          >
+                            {genre}
+                          </button>
+                        ))}
+                        {movie.genre.length > 3 && (
+                          <span className="text-xs text-white px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md w-fit"
+                            style={{ zIndex: 27 }}>
+                            +{movie.genre.length - 3}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Year badge */}
@@ -1048,6 +1171,15 @@ export default function MovieList() {
                         p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
                         <Heart className="w-4 h-4 text-red-500" fill="currentColor" />
+                      </div>
+                    )}
+
+                    {/* 4K badge */}
+                    {movie.genre.some(g => g.includes('4K')) && (
+                      <div className="absolute top-11 right-3 bg-gradient-to-r from-blue-600 to-purple-600
+                        p-1.5 py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      >
+                        <label className="text-xs font-bold text-white">4K</label>
                       </div>
                     )}
 
@@ -1349,29 +1481,39 @@ export default function MovieList() {
 
             {/* Pagination controls */}
             {totalPages > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-2">
+              <div className="mt-6 flex flex-wrap justify-center items-center gap-2">
                 <button
                   onClick={() => handlePageChange(1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                  className={`flex px-3 py-1 rounded-lg text-sm font-medium
                     ${currentPage === 1
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  Đầu
+                  <span className="hidden md:inline">Đầu</span>
+                  <span className="md:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  </span>
                 </button>
 
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium
+                  className={`flex px-3 py-1 rounded-lg text-sm font-medium
                     ${currentPage === 1
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  Trước
+                  <span className="hidden md:inline">Trước</span>
+                  <span className="md:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </span>
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -1387,11 +1529,18 @@ export default function MovieList() {
                       pageNumber = currentPage - 2 + i;
                     }
 
+                    // Hiển thị nhiều trang hơn trên mobile nhưng vẫn giữ gọn gàng
+                    const shouldHideOnMobile = (pageNumber !== currentPage &&
+                      pageNumber !== 1 &&
+                      pageNumber !== totalPages &&
+                      Math.abs(pageNumber - currentPage) > 2);
+
                     return (
                       <button
                         key={i}
                         onClick={() => handlePageChange(pageNumber)}
-                        className={`w-8 h-8 rounded-lg text-sm font-medium
+                        className={`${shouldHideOnMobile ? 'hidden md:flex' : 'flex'} 
+                          w-7 h-7 md:w-8 md:h-8 items-center justify-center rounded-lg text-sm font-medium
                           ${currentPage === pageNumber
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -1412,7 +1561,8 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  Sau
+                  <span className="hidden md:inline">Sau</span>
+                  <span className="md:hidden">&gt;</span>
                 </button>
 
                 <button
@@ -1424,10 +1574,15 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  Cuối
+                  <span className="hidden md:inline">Cuối</span>
+                  <span className="md:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                  </span>
                 </button>
 
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="w-full md:w-auto text-center text-sm text-gray-600 dark:text-gray-400">
                   Trang {currentPage}/{totalPages}
                 </span>
               </div>
@@ -1722,10 +1877,13 @@ export default function MovieList() {
                 )}
 
                 <img
-                  src={previewImage}
+                  src={previewImage || ''}
                   alt="Preview"
                   className="max-w-full max-h-[calc(100vh-200px)] object-contain rounded-lg"
                   onClick={(e) => e.stopPropagation()}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 />
 
                 {/* Next button */}

@@ -139,6 +139,14 @@ const extractImagesFromHtml = (html: string): string[] => {
   return imageUrls;
 };
 
+const saveMobileCardLayout = (isSingle: boolean) => {
+  localStorage.setItem('mobileCardLayout', isSingle ? 'single' : 'double');
+};
+
+const getMobileCardLayout = (): boolean => {
+  return localStorage.getItem('mobileCardLayout') === 'single';
+};
+
 export default function MovieList() {
   const [buttonClasses, setButtonClasses] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -183,6 +191,7 @@ export default function MovieList() {
     top: false,
     bottom: true
   });
+  const [isSingleCardMobile, setIsSingleCardMobile] = useState(getMobileCardLayout());
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -775,8 +784,35 @@ export default function MovieList() {
     setTouchEnd(null);
   };
 
+  const toggleMobileCardLayout = () => {
+    const newValue = !isSingleCardMobile;
+    setIsSingleCardMobile(newValue);
+    saveMobileCardLayout(newValue);
+  };
+
   return (
     <div className="w-full md:p-4">
+      {/* Mobile layout toggle button */}
+      <div className="md:hidden fixed left-2 bottom-20 z-40">
+        <button
+          onClick={toggleMobileCardLayout}
+          className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg
+            hover:bg-white dark:hover:bg-gray-700
+            text-gray-600 dark:text-gray-300
+            transition-all duration-200 backdrop-blur-sm
+            transform hover:scale-110 active:scale-95"
+          title={isSingleCardMobile ? "Chuyển sang 2 cột" : "Chuyển sang 1 cột"}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d={isSingleCardMobile
+                ? "M8 7h12M8 12h12M8 17h12M4 7h0M4 12h0M4 17h0"
+                : "M4 5a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1h-4a1 1 0 01-1-1V5z"}
+            />
+          </svg>
+        </button>
+      </div>
+
       {/* Scroll buttons */}
       <div className="fixed md:right-4 right-2 md:bottom-4 bottom-20 flex flex-col gap-2 z-40">
         {showScrollButtons.top && (
@@ -1065,7 +1101,10 @@ export default function MovieList() {
             </div>
 
             {/* Movie grid - Cập nhật để sử dụng paginatedMovies */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+            <div className={`grid gap-4 ${isSingleCardMobile
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              : 'grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              }`}>
               {paginatedMovies.map(movie => (
                 <div
                   key={movie._id}
@@ -1334,11 +1373,11 @@ export default function MovieList() {
                     {/* Title */}
                     <div
                       id={`movie-${movie._id}`}
-                      className="relative group h-[48px] md:h-[72px]"
+                      className="relative group h-auto md:h-[72px]"
                     >
                       <h3
                         className="text-sm md:text-lg font-semibold text-gray-800 dark:text-white
-                          line-clamp-3 cursor-pointer leading-4 md:leading-6 hover:text-blue-500 dark:hover:text-blue-400
+                          line-clamp-3 md:line-clamp-3 cursor-pointer leading-4 md:leading-6 hover:text-blue-500 dark:hover:text-blue-400
                           transition-colors duration-200"
                         onClick={() => {
                           setMovieInput({

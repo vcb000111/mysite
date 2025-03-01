@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Star, StarOff, Edit, Trash2, X, Link as LinkIcon, Heart, HeartOff, Eye, EyeOff, Check } from 'lucide-react';
+import { Plus, Search, Star, StarOff, Edit, Trash2, X, Link as LinkIcon, Heart, HeartOff, Eye, EyeOff, Check, Image } from 'lucide-react';
 import { GradientGenerator } from '@/app/utils/gradients';
 import React from 'react';
 import Swal from 'sweetalert2';
@@ -1172,7 +1172,7 @@ export default function MovieList() {
                       <div className="absolute top-1 md:top-2 left-1 md:left-2 bg-white/90 dark:bg-gray-800/90 
                         p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <Eye className="w-3 h-3 md:w-4 md:h-4 text-green-500" fill="currentColor" />
+                        <Eye className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-green-500`} fill="currentColor" />
                       </div>
                     )}
 
@@ -1183,10 +1183,10 @@ export default function MovieList() {
                           <button
                             key={genre}
                             onClick={() => setSelectedGenre(genre)}
-                            className="px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-xs rounded-md text-left
+                            className={`px-1.5 md:px-2 py-0.5 md:py-1 ${isSingleCardMobile ? 'text-[11px]' : 'text-[10px]'} md:text-xs rounded-md text-left
                               bg-black/70 backdrop-blur-sm
                               text-white font-medium w-fit
-                              hover:bg-black/80 transition-colors duration-200"
+                              hover:bg-black/80 transition-colors duration-200`}
                             style={{
                               zIndex: 30 - index
                             }}
@@ -1195,7 +1195,7 @@ export default function MovieList() {
                           </button>
                         ))}
                         {movie.genre.length > 3 && (
-                          <span className="text-[10px] md:text-xs text-white px-1.5 md:px-2 py-0.5 md:py-1 bg-black/70 backdrop-blur-sm rounded-md w-fit"
+                          <span className={`text-${isSingleCardMobile ? '11px' : '10px'} md:text-xs text-white px-1.5 md:px-2 py-0.5 md:py-1 bg-black/70 backdrop-blur-sm rounded-md w-fit`}
                             style={{ zIndex: 27 }}>
                             +{movie.genre.length - 3}
                           </span>
@@ -1204,8 +1204,8 @@ export default function MovieList() {
                     </div>
 
                     {/* Year badge */}
-                    <div className="absolute bottom-1 md:bottom-2 right-1 md:right-2 bg-black/70 backdrop-blur-sm
-                      px-1.5 md:px-2 py-0.5 md:py-1 rounded-md text-white text-[10px] md:text-sm font-medium z-10"
+                    <div className={`absolute bottom-1 md:bottom-2 right-1 md:right-2 bg-black/70 backdrop-blur-sm
+                      px-1.5 md:px-2 py-0.5 md:py-1 rounded-md text-white ${isSingleCardMobile ? 'text-[11px]' : 'text-[10px]'} md:text-sm font-medium z-10`}
                     >
                       {new Date(movie.releaseDate).toLocaleDateString('vi-VN', {
                         year: 'numeric',
@@ -1219,14 +1219,14 @@ export default function MovieList() {
                       <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
                         p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <Heart className="w-3 h-3 md:w-4 md:h-4 text-red-500" fill="currentColor" />
+                        <Heart className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-red-500`} fill="currentColor" />
                       </div>
                     ) : movie.genre.some(g => g.includes('4K')) && (
                       <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
                         px-1 md:px-1.5 py-0 md:py-1 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <span className="text-[10px] md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
-                          text-yellow-500 bg-clip-text">4K</span>
+                        <span className={`${isSingleCardMobile ? 'text-[11px]' : 'text-[10px]'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
+                          text-yellow-500 bg-clip-text`}>4K</span>
                       </div>
                     )}
 
@@ -1235,8 +1235,8 @@ export default function MovieList() {
                       <div className="absolute top-7 md:top-9 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
                         px-1 md:px-1.5 md:py-1 py-0 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <span className="text-[10px] md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
-                          text-yellow-500 bg-clip-text">4K</span>
+                        <span className={`${isSingleCardMobile ? 'text-[11px] px-0.5' : 'text-[10px] py-0.5 px-1'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
+                          text-yellow-500 bg-clip-text`}>4K</span>
                       </div>
                     )}
 
@@ -1386,9 +1386,10 @@ export default function MovieList() {
                       className="relative group h-auto md:h-[72px]"
                     >
                       <h3
-                        className="text-sm md:text-lg font-semibold text-gray-800 dark:text-white
-                          line-clamp-3 md:line-clamp-3 cursor-pointer leading-4 md:leading-6 hover:text-blue-500 dark:hover:text-blue-400
-                          transition-colors duration-200"
+                        className={`font-semibold text-gray-800 dark:text-white
+                          line-clamp-3 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400
+                          transition-colors duration-200
+                          ${isSingleCardMobile ? 'text-base leading-5' : 'text-sm leading-4'} md:text-lg md:leading-6`}
                         onClick={() => {
                           setMovieInput({
                             title: movie.title,
@@ -1450,25 +1451,25 @@ export default function MovieList() {
                             )}
                             <button
                               onClick={() => setSearchTerm(part)}
-                              className={`text-sm md:text-base font-bold animate-gradient
+                              className={`md:text-base font-bold animate-gradient
                                 hover:opacity-75 transition-opacity duration-200 
                                 focus:outline-none focus:ring-2 focus:ring-blue-500 
                                 dark:focus:ring-blue-400 focus:ring-opacity-50 
-                                rounded px-0.5`}
+                                rounded px-0.5 ${isSingleCardMobile ? 'text-base' : ''}`}
                             >
                               {part}
                             </button>
                           </React.Fragment>
                         ))}
                       </div>
-                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 text-xs md:text-sm">
-                        <Star className="w-3 h-3 md:w-4 md:h-4 text-yellow-500" fill="currentColor" />
+                      <span className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 md:text-sm ${isSingleCardMobile ? 'text-base' : 'text-xs'}`}>
+                        <Star className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-yellow-500`} fill="currentColor" />
                         {movie.rating || 0}
                       </span>
                     </div>
 
                     {/* Actress và Image count */}
-                    <div className="text-xs md:text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
+                    <div className={`text-${isSingleCardMobile ? 'base' : 'xs'} md:text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center`}>
                       <div className="flex flex-wrap gap-1 md:gap-2">
                         {formatActressName(movie.actress).map((pair, index) => (
                           <button
@@ -1476,10 +1477,10 @@ export default function MovieList() {
                             onClick={() => {
                               setSearchTerm(pair);
                             }}
-                            className="hover:text-blue-500 dark:hover:text-blue-400 
+                            className={`hover:text-blue-500 dark:hover:text-blue-400 
                               transition-colors duration-200 hover:underline
                               focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                              focus:ring-opacity-50 rounded text-xs md:text-sm"
+                              focus:ring-opacity-50 rounded ${isSingleCardMobile ? 'text-base' : 'text-xs'}`}
                           >
                             {pair}
                           </button>
@@ -1492,9 +1493,9 @@ export default function MovieList() {
                             setPreviewImage(movie.poster);
                             setPreviewImages([movie.poster, ...(movie.images || [])]);
                           }}
-                          className="flex items-center gap-1 text-[10px] md:text-xs bg-gray-100 hover:bg-gray-200 
+                          className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-gray-100 hover:bg-gray-200 
                             dark:bg-gray-700 dark:hover:bg-gray-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
-                            transition-colors duration-200 group cursor-pointer"
+                            transition-colors duration-200 group cursor-pointer`}
                           title="Nhấn để xem tất cả ảnh"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg"

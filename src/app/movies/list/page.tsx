@@ -1065,7 +1065,7 @@ export default function MovieList() {
             </div>
 
             {/* Movie grid - Cập nhật để sử dụng paginatedMovies */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
               {paginatedMovies.map(movie => (
                 <div
                   key={movie._id}
@@ -1120,21 +1120,21 @@ export default function MovieList() {
 
                     {/* Seen badge */}
                     {movie.isSeen && (
-                      <div className="absolute top-3 left-3 bg-white/90 dark:bg-gray-800/90 
-                        p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      <div className="absolute top-1 md:top-2 left-1 md:left-2 bg-white/90 dark:bg-gray-800/90 
+                        p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <Eye className="w-4 h-4 text-green-500" fill="currentColor" />
+                        <Eye className="w-3 h-3 md:w-4 md:h-4 text-green-500" fill="currentColor" />
                       </div>
                     )}
 
                     {/* Genre badges */}
-                    <div className="absolute bottom-3 left-3 z-10">
-                      <div className="flex flex-col space-y-1">
+                    <div className="absolute bottom-1 md:bottom-2 left-1 md:left-2 z-10">
+                      <div className="flex flex-col space-y-0.5 md:space-y-1">
                         {movie.genre.slice(0, 3).map((genre, index) => (
                           <button
                             key={genre}
                             onClick={() => setSelectedGenre(genre)}
-                            className="px-2 py-1 text-xs rounded-md text-left
+                            className="px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-xs rounded-md text-left
                               bg-black/70 backdrop-blur-sm
                               text-white font-medium w-fit
                               hover:bg-black/80 transition-colors duration-200"
@@ -1146,7 +1146,7 @@ export default function MovieList() {
                           </button>
                         ))}
                         {movie.genre.length > 3 && (
-                          <span className="text-xs text-white px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md w-fit"
+                          <span className="text-[10px] md:text-xs text-white px-1.5 md:px-2 py-0.5 md:py-1 bg-black/70 backdrop-blur-sm rounded-md w-fit"
                             style={{ zIndex: 27 }}>
                             +{movie.genre.length - 3}
                           </span>
@@ -1155,8 +1155,8 @@ export default function MovieList() {
                     </div>
 
                     {/* Year badge */}
-                    <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm
-                      px-2 py-1 rounded-md text-white text-sm font-medium z-10"
+                    <div className="absolute bottom-1 md:bottom-2 right-1 md:right-2 bg-black/70 backdrop-blur-sm
+                      px-1.5 md:px-2 py-0.5 md:py-1 rounded-md text-white text-[10px] md:text-sm font-medium z-10"
                     >
                       {new Date(movie.releaseDate).toLocaleDateString('vi-VN', {
                         year: 'numeric',
@@ -1165,21 +1165,29 @@ export default function MovieList() {
                       }).split('/').join('-')}
                     </div>
 
-                    {/* Favorite badge */}
-                    {movie.isFavorite && (
-                      <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 
-                        p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                    {/* Favorite hoặc 4K badge (ở cùng vị trí) */}
+                    {movie.isFavorite ? (
+                      <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
+                        p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <Heart className="w-4 h-4 text-red-500" fill="currentColor" />
+                        <Heart className="w-3 h-3 md:w-4 md:h-4 text-red-500" fill="currentColor" />
+                      </div>
+                    ) : movie.genre.some(g => g.includes('4K')) && (
+                      <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
+                        px-1 md:px-1.5 py-0 md:py-1 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      >
+                        <span className="text-[10px] md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
+                          text-yellow-500 bg-clip-text">4K</span>
                       </div>
                     )}
 
-                    {/* 4K badge */}
-                    {movie.genre.some(g => g.includes('4K')) && (
-                      <div className="absolute top-11 right-3 bg-gradient-to-r from-blue-600 to-purple-600
-                        p-1.5 py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                    {/* 4K badge (chỉ hiện khi có cả Favorite) */}
+                    {movie.isFavorite && movie.genre.some(g => g.includes('4K')) && (
+                      <div className="absolute top-7 md:top-9 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
+                        px-1 md:px-1.5 md:py-1 py-0 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <label className="text-xs font-bold text-white">4K</label>
+                        <span className="text-[10px] md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
+                          text-yellow-500 bg-clip-text">4K</span>
                       </div>
                     )}
 
@@ -1189,30 +1197,30 @@ export default function MovieList() {
                     >
                       <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                         {/* Action buttons */}
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1 md:gap-2">
                           {/* Seen button */}
                           <button
                             onClick={() => handleToggleSeen(movie._id, movie.isSeen)}
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
                               hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                           >
                             {movie.isSeen ? (
-                              <Eye className="w-5 h-5 text-green-500" fill="currentColor" />
+                              <Eye className="w-4 h-4 md:w-5 md:h-5 text-green-500" fill="currentColor" />
                             ) : (
-                              <EyeOff className="w-5 h-5 text-gray-400" />
+                              <EyeOff className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                             )}
                           </button>
 
                           {/* Favorite button */}
                           <button
                             onClick={() => handleToggleFavorite(movie._id, movie.isFavorite)}
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
                               hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                           >
                             {movie.isFavorite ? (
-                              <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
+                              <Heart className="w-4 h-4 md:w-5 md:h-5 text-red-500" fill="currentColor" />
                             ) : (
-                              <HeartOff className="w-5 h-5 text-gray-400" />
+                              <HeartOff className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                             )}
                           </button>
 
@@ -1220,24 +1228,24 @@ export default function MovieList() {
                           <div className="relative">
                             <button
                               onClick={() => setShowRating(movie._id)}
-                              className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                              className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
                                 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                             >
                               <Star
-                                className="w-5 h-5 text-yellow-500"
+                                className="w-4 h-4 md:w-5 md:h-5 text-yellow-500"
                                 fill={movie.rating > 0 ? "currentColor" : "none"}
                               />
                             </button>
 
                             {/* Rating popup */}
                             {showRating === movie._id && (
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-1 md:p-2
                                 bg-white dark:bg-gray-800 rounded-lg shadow-xl
                                 border border-gray-100 dark:border-gray-700
                                 transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100
                                 transition-all duration-200 z-50"
                               >
-                                <div className="flex items-center gap-1 px-2 py-1">
+                                <div className="flex items-center gap-0.5 md:gap-1 px-1 md:px-2 py-0.5 md:py-1">
                                   {[...Array(10)].map((_, index) => (
                                     <button
                                       key={index}
@@ -1272,10 +1280,10 @@ export default function MovieList() {
                                           }
                                         });
                                       }}
-                                      className="p-1 hover:scale-110 transition-transform"
+                                      className="p-0.5 md:p-1 hover:scale-110 transition-transform"
                                     >
                                       <Star
-                                        className={`w-4 h-4 rating-star ${index < movie.rating
+                                        className={`w-3 h-3 md:w-4 md:h-4 rating-star ${index < movie.rating
                                           ? 'text-yellow-500 fill-current'
                                           : 'text-gray-300 dark:text-gray-600'
                                           }`}
@@ -1302,19 +1310,19 @@ export default function MovieList() {
                               setEditingMovie(movie);
                               setShowModal(true);
                             }}
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
                               hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                           >
-                            <Edit className="w-5 h-5 text-blue-500" />
+                            <Edit className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                           </button>
 
                           {/* Delete button */}
                           <button
                             onClick={() => setDeletingMovie(movie)}
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg
+                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
                               hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                           >
-                            <Trash2 className="w-5 h-5 text-red-500" />
+                            <Trash2 className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
                           </button>
                         </div>
                       </div>
@@ -1322,15 +1330,15 @@ export default function MovieList() {
                   </div>
 
                   {/* Movie info */}
-                  <div className="md:p-4 p-2 space-y-2">
+                  <div className="p-2 md:p-4 space-y-1 md:space-y-2">
                     {/* Title */}
                     <div
                       id={`movie-${movie._id}`}
-                      className="relative group h-[72px]"
+                      className="relative group h-[48px] md:h-[72px]"
                     >
                       <h3
-                        className="text-lg font-semibold text-gray-800 dark:text-white
-                          line-clamp-3 cursor-pointer leading-6 hover:text-blue-500 dark:hover:text-blue-400
+                        className="text-sm md:text-lg font-semibold text-gray-800 dark:text-white
+                          line-clamp-3 cursor-pointer leading-4 md:leading-6 hover:text-blue-500 dark:hover:text-blue-400
                           transition-colors duration-200"
                         onClick={() => {
                           setMovieInput({
@@ -1349,13 +1357,11 @@ export default function MovieList() {
                           const element = e.currentTarget;
                           const rect = element.getBoundingClientRect();
                           const viewportWidth = window.innerWidth;
-                          const tooltipWidth = 300; // Độ rộng cố định của tooltip
+                          const tooltipWidth = 300;
 
-                          // Kiểm tra xem có đủ không gian bên phải không
                           const spaceOnRight = viewportWidth - rect.right;
                           const showOnRight = spaceOnRight >= tooltipWidth;
 
-                          // Chỉ hiện tooltip nếu nội dung bị cắt
                           if (element.scrollHeight > element.clientHeight) {
                             setShowTooltip({
                               id: movie._id,
@@ -1385,53 +1391,36 @@ export default function MovieList() {
 
                     {/* Code and Rating */}
                     <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
-                        {movie.code.split('-').map((part, index) => {
-                          // Tạo mảng các gradient colors
-                          const gradientColors = [
-                            'from-blue-500 to-purple-500',
-                            'from-pink-500 to-rose-500',
-                            'from-green-500 to-teal-500',
-                            'from-orange-500 to-red-500',
-                            'from-indigo-500 to-blue-500',
-                            'from-yellow-500 to-orange-500',
-                            'from-purple-500 to-pink-500',
-                            'from-teal-500 to-cyan-500'
-                          ];
-
-                          // Lấy màu gradient dựa trên index của phần mã phim
-                          const gradient = gradientColors[index % gradientColors.length];
-
-                          return (
-                            <React.Fragment key={index}>
-                              {index > 0 && (
-                                <span className="animate-gradient text-base font-bold">
-                                  -
-                                </span>
-                              )}
-                              <button
-                                onClick={() => setSearchTerm(part)}
-                                className={`text-base font-bold animate-gradient
-                                  hover:opacity-75 transition-opacity duration-200 
-                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                  dark:focus:ring-blue-400 focus:ring-opacity-50 
-                                  rounded px-0.5`}
-                              >
-                                {part}
-                              </button>
-                            </React.Fragment>
-                          );
-                        })}
+                      <div className="text-xs md:text-sm text-gray-600 dark:text-gray-300 flex items-center">
+                        {movie.code.split('-').map((part, index) => (
+                          <React.Fragment key={index}>
+                            {index > 0 && (
+                              <span className="animate-gradient text-sm md:text-base font-bold">
+                                -
+                              </span>
+                            )}
+                            <button
+                              onClick={() => setSearchTerm(part)}
+                              className={`text-sm md:text-base font-bold animate-gradient
+                                hover:opacity-75 transition-opacity duration-200 
+                                focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                dark:focus:ring-blue-400 focus:ring-opacity-50 
+                                rounded px-0.5`}
+                            >
+                              {part}
+                            </button>
+                          </React.Fragment>
+                        ))}
                       </div>
-                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                        <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 text-xs md:text-sm">
+                        <Star className="w-3 h-3 md:w-4 md:h-4 text-yellow-500" fill="currentColor" />
                         {movie.rating || 0}
                       </span>
                     </div>
 
                     {/* Actress và Image count */}
-                    <div className="text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
-                      <div className="flex flex-wrap gap-2">
+                    <div className="text-xs md:text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center">
+                      <div className="flex flex-wrap gap-1 md:gap-2">
                         {formatActressName(movie.actress).map((pair, index) => (
                           <button
                             key={index}
@@ -1441,7 +1430,7 @@ export default function MovieList() {
                             className="hover:text-blue-500 dark:hover:text-blue-400 
                               transition-colors duration-200 hover:underline
                               focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                              focus:ring-opacity-50 rounded"
+                              focus:ring-opacity-50 rounded text-xs md:text-sm"
                           >
                             {pair}
                           </button>
@@ -1454,13 +1443,13 @@ export default function MovieList() {
                             setPreviewImage(movie.poster);
                             setPreviewImages([movie.poster, ...(movie.images || [])]);
                           }}
-                          className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 
-                            dark:bg-gray-700 dark:hover:bg-gray-600 px-2 py-1 rounded-lg
+                          className="flex items-center gap-1 text-[10px] md:text-xs bg-gray-100 hover:bg-gray-200 
+                            dark:bg-gray-700 dark:hover:bg-gray-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
                             transition-colors duration-200 group cursor-pointer"
                           title="Nhấn để xem tất cả ảnh"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg"
-                            className="w-4 h-4 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 
+                            className="w-3 h-3 md:w-4 md:h-4 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 
                               transition-colors duration-200"
                             fill="none"
                             viewBox="0 0 24 24"

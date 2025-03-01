@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/contexts/SidebarContext";
 import ClientLayout from "@/components/layout/ClientLayout";
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import Script from 'next/script';
+import { MoviesAccessProvider } from '@/contexts/MoviesAccessContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,11 +45,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950`}
       >
         <ThemeProvider>
-          <div className="min-h-screen bg-white dark:bg-gray-950">
-            <SidebarProvider>
-              <ClientLayout>{children}</ClientLayout>
-            </SidebarProvider>
-          </div>
+          <SidebarProvider>
+            <MoviesAccessProvider>
+              <div className="min-h-screen bg-white dark:bg-gray-950">
+                <ClientLayout>{children}</ClientLayout>
+              </div>
+            </MoviesAccessProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>

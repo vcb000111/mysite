@@ -1455,7 +1455,7 @@ export default function MovieList() {
                                 hover:opacity-75 transition-opacity duration-200 
                                 focus:outline-none focus:ring-2 focus:ring-blue-500 
                                 dark:focus:ring-blue-400 focus:ring-opacity-50 
-                                rounded px-0.5 ${isSingleCardMobile ? 'text-base' : ''}`}
+                                rounded ${isSingleCardMobile ? 'text-base' : ''}`}
                             >
                               {part}
                             </button>

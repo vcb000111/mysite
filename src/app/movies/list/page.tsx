@@ -803,7 +803,7 @@ export default function MovieList() {
   return (
     <div className="w-full md:p-4">
       {/* Mobile layout toggle button */}
-      <div className="md:hidden fixed left-2 bottom-20 z-40">
+      <div className="md:hidden fixed left-2 bottom-2 z-40">
         <button
           onClick={toggleMobileCardLayout}
           className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg
@@ -824,7 +824,7 @@ export default function MovieList() {
       </div>
 
       {/* Scroll buttons */}
-      <div className="fixed md:right-4 right-2 md:bottom-4 bottom-20 flex flex-col gap-2 z-40">
+      <div className="fixed md:right-4 right-2 md:bottom-4 bottom-14 flex flex-col gap-2 z-40">
         {showScrollButtons.top && (
           <button
             onClick={scrollToTop}

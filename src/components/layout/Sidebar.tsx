@@ -4,7 +4,7 @@ import {
   Home, Wrench, Gamepad2, Calendar, MessagesSquare, Settings, ChevronLeft, ChevronRight, ChevronDown,
   Calculator, ArrowLeftRight, QrCode, Target, Dices, Puzzle, Sun, Moon,
   BookOpen, PenSquare, ListOrdered, Tags, FolderOpen,
-  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut
+  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut, Menu
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -201,6 +201,8 @@ export default function Sidebar() {
     return null;
   });
 
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
   // Thêm useEffect để tự động ẩn sidebar khi chuyển trang trên mobile
   useEffect(() => {
     if (window.innerWidth < 768 && !isCollapsed) {
@@ -371,55 +373,48 @@ export default function Sidebar() {
         />
       )}
 
+      {/* Mobile Float Buttons */}
+      <div className="md:hidden fixed bottom-2 right-2 z-50 flex gap-2">
+        <button
+          onClick={toggleSidebar}
+          className="p-2.5 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all duration-200"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </div>
+
       <div
         className={`fixed transition-all duration-200 bg-white shadow-lg dark:bg-gray-900
         md:left-0 md:top-0 md:h-screen 
         ${isCollapsed ? 'md:w-16' : 'md:w-64'}
         ${isCollapsed
-            ? 'bottom-0 left-0 right-0 h-16'
-            : 'bottom-0 left-0 right-0 h-[90vh]'
+            ? '-bottom-[100vh]'
+            : 'bottom-0 left-0 right-0 h-[85vh]'
           }
-        z-50`}
+        z-50 md:z-30 overflow-y-auto`}
       >
         {/* Logo section */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
-          <span className="text-xl font-bold animate-gradient-slow">
+        <div className="flex items-center justify-between h-12 px-3 border-b border-gray-200 dark:border-gray-800">
+          <span className="text-lg font-bold animate-gradient-slow">
             {isCollapsed ? 'Mink' : 'Bảo Mink Site'}
           </span>
 
           {/* Mobile toggle button */}
           <button
             onClick={toggleSidebar}
-            className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg
+            className="md:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg
               text-gray-600 dark:text-gray-300"
           >
             {isCollapsed ? (
-              <ChevronUp className="w-5 h-5" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </button>
         </div>
 
-        {/* Desktop toggle button */}
-        <button
-          onClick={toggleSidebar}
-          className="hidden md:flex absolute -right-4 top-20 
-            bg-white dark:bg-gray-900 
-            shadow-lg rounded-full p-1.5 
-            hover:bg-gray-100 dark:hover:bg-gray-800 
-            text-gray-600 dark:text-gray-300
-            transition-all duration-200"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
-
         {/* Menu items - Hiển thị đầy đủ trên desktop và khi mở rộng trên mobile */}
-        <nav className={`${isCollapsed ? 'hidden' : ''} md:block p-2 overflow-y-auto h-[calc(100%-4rem)]`}>
+        <nav className={`${isCollapsed ? 'hidden' : ''} md:block p-2 overflow-y-auto h-[calc(100%-3rem)]`}>
           {giftCodeButton}
           {menuItems.map((item) => {
             if (item.requiresAccess && !hasAccess) {
@@ -437,64 +432,64 @@ export default function Sidebar() {
                 : item.items?.some(subItem => isSubMenuActive(subItem.href));
 
             return (
-              <div key={item.label}>
+              <div key={item.label} className="mb-1">
                 {item.href ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
                       ${pathname === item.href
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-4 h-4" />
                     {!isCollapsed && <span>{item.label}</span>}
                   </Link>
                 ) : (
-                  <div className="mb-2">
+                  <div className="mb-1">
                     <button
                       onClick={() => toggleDropdown(item.label)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
                         ${item.items && isParentActive(item.items)
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-4 h-4" />
                         {!isCollapsed && <span>{item.label}</span>}
                       </div>
                       {!isCollapsed && (
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-200
+                          className={`w-3 h-3 transition-transform duration-200
                             ${openDropdown === item.label ? 'rotate-180' : ''}`}
                         />
                       )}
                     </button>
 
                     {(openDropdown === item.label || isCollapsed) && (
-                      <div className={`mt-1 space-y-1 ${isCollapsed ? 'relative' : 'ml-4'}`}>
+                      <div className={`mt-1 space-y-1 ${isCollapsed ? 'relative' : 'ml-3'}`}>
                         {item.items?.map((subItem: any) => (
                           <div key={subItem.href || subItem.label}>
                             {subItem.onClick ? (
                               <button
                                 onClick={() => handleMenuItemClick(subItem as SubMenuItem)}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 w-full
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm
                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
                               >
-                                <subItem.icon className="w-5 h-5" />
+                                <subItem.icon className="w-4 h-4" />
                                 {!isCollapsed && <span>{subItem.label}</span>}
                               </button>
                             ) : (
                               <Link
                                 href={subItem.href}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
                                   ${pathname === subItem.href
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                                   }`}
                               >
-                                <subItem.icon className="w-5 h-5" />
+                                <subItem.icon className="w-4 h-4" />
                                 {!isCollapsed && <span>{subItem.label}</span>}
                               </Link>
                             )}
@@ -512,17 +507,17 @@ export default function Sidebar() {
           <div className="md:hidden mt-2">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
                 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               {isDark ? (
                 <>
-                  <Sun className="w-5 h-5 text-yellow-500" />
+                  <Sun className="w-4 h-4 text-yellow-500" />
                   <span>Chế độ sáng</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-5 h-5 text-blue-600" />
+                  <Moon className="w-4 h-4 text-blue-600" />
                   <span>Chế độ tối</span>
                 </>
               )}
@@ -530,29 +525,22 @@ export default function Sidebar() {
           </div>
         </nav>
 
-        {/* Mobile navigation - Chỉ hiển thị khi thu gọn trên mobile */}
-        <nav className={`${!isCollapsed ? 'hidden' : ''} md:hidden flex items-center justify-around h-full px-4`}>
+        {/* Mobile navigation - Ẩn hoàn toàn trên mobile */}
+        <nav className="hidden md:hidden flex items-center justify-around h-full px-4">
           {menuItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.label}
                 href={item.href || '#'}
-                className="flex flex-col items-center justify-center"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setShowMobileMenu(false)}
               >
-                <Icon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-                <span className="text-xs mt-1 text-gray-600 dark:text-gray-300">{item.label}</span>
+                <Icon className="w-5 h-5" />
+                <span>{item.label}</span>
               </Link>
             );
           })}
-          {/* Mobile menu toggle button */}
-          <button
-            onClick={toggleSidebar}
-            className="flex flex-col items-center justify-center"
-          >
-            <ChevronUp className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-            <span className="text-xs mt-1 text-gray-600 dark:text-gray-300">Menu</span>
-          </button>
         </nav>
 
         {/* Mobile expanded menu header */}

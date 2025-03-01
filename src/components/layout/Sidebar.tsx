@@ -28,6 +28,11 @@ const menuItems = [
         label: 'Thể loại',
         href: '/movies/categories'
       },
+      {
+        icon: Star,
+        label: 'Kiểm tra phim',
+        href: '/movies/check'
+      },
     ]
   },
   {

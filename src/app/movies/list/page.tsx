@@ -1235,7 +1235,7 @@ export default function MovieList() {
                       <div className="absolute top-7 md:top-9 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
                         px-1 md:px-1.5 md:py-1 py-0 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <span className={`${isSingleCardMobile ? 'text-[11px] px-0.5' : 'text-[10px] py-0.5 px-1'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
+                        <span className={`${isSingleCardMobile ? 'text-[11px] px-0.5' : 'text-[10px]'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
                           text-yellow-500 bg-clip-text`}>4K</span>
                       </div>
                     )}
@@ -1736,17 +1736,13 @@ export default function MovieList() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <input
-                          type="text"
-                          placeholder="Ngày phát hành"
+                          type="date"
+                          id="releaseDate"
                           value={movieInput.releaseDate}
-                          onChange={(e) => {
-                            if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value) || e.target.value === '') {
-                              setMovieInput({ ...movieInput, releaseDate: e.target.value });
-                            }
-                          }}
-                          className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
-                            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                            focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                          onChange={(e) => setMovieInput(prev => ({ ...prev, releaseDate: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                            focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                         />
                         <input
                           type="text"

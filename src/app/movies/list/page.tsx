@@ -140,11 +140,16 @@ const extractImagesFromHtml = (html: string): string[] => {
 };
 
 const saveMobileCardLayout = (isSingle: boolean) => {
-  localStorage.setItem('mobileCardLayout', isSingle ? 'single' : 'double');
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('mobileCardLayout', isSingle ? 'single' : 'double');
+  }
 };
 
 const getMobileCardLayout = (): boolean => {
-  return localStorage.getItem('mobileCardLayout') === 'single';
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('mobileCardLayout') === 'single';
+  }
+  return true; // Giá trị mặc định khi ở server-side
 };
 
 export default function MovieList() {
@@ -191,7 +196,7 @@ export default function MovieList() {
     top: false,
     bottom: true
   });
-  const [isSingleCardMobile, setIsSingleCardMobile] = useState(getMobileCardLayout());
+  const [isSingleCardMobile, setIsSingleCardMobile] = useState(true); // Giá trị mặc định
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -789,6 +794,11 @@ export default function MovieList() {
     setIsSingleCardMobile(newValue);
     saveMobileCardLayout(newValue);
   };
+
+  useEffect(() => {
+    // Chỉ cập nhật state sau khi component được mount ở client-side
+    setIsSingleCardMobile(getMobileCardLayout());
+  }, []);
 
   return (
     <div className="w-full md:p-4">

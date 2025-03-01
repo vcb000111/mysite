@@ -28,82 +28,85 @@ interface SubMenuItem {
   href?: string;
   onClick?: {
     type: 'extend' | 'end';
-    handler: (handleClick: () => void) => Promise<number | boolean>;
+    handler: (handleClick: () => void) => Promise<boolean | number>;
   };
 }
 
-const createMenuItems = (handleExtend: (handleClick: () => void) => Promise<number>, handleEnd: (handleClick: () => void) => Promise<boolean>): MenuItem[] => [
-  { icon: Home, label: 'Trang chủ', href: '/' },
-  {
-    icon: Film,
-    label: 'My Movies',
-    requiresAccess: true,
-    items: [
-      {
-        icon: ListVideo,
-        label: 'Danh sách phim',
-        href: '/movies/list'
-      },
-      {
-        icon: Clapperboard,
-        label: 'Thể loại',
-        href: '/movies/categories'
-      },
-      {
-        icon: Star,
-        label: 'Kiểm tra phim',
-        href: '/movies/check'
-      },
-      {
-        icon: Clock,
-        label: 'Gia hạn',
-        onClick: {
-          type: 'extend',
-          handler: handleExtend
+const createMenuItems = (
+  handleExtend: (handleClick: () => void) => Promise<number | boolean>,
+  handleEnd: (handleClick: () => void) => Promise<boolean>
+): MenuItem[] => [
+    { icon: Home, label: 'Trang chủ', href: '/' },
+    {
+      icon: Film,
+      label: 'My Movies',
+      requiresAccess: true,
+      items: [
+        {
+          icon: ListVideo,
+          label: 'Danh sách phim',
+          href: '/movies/list'
+        },
+        {
+          icon: Clapperboard,
+          label: 'Thể loại',
+          href: '/movies/categories'
+        },
+        {
+          icon: Star,
+          label: 'Kiểm tra phim',
+          href: '/movies/check'
+        },
+        {
+          icon: Clock,
+          label: 'Gia hạn',
+          onClick: {
+            type: 'extend',
+            handler: handleExtend
+          }
+        },
+        {
+          icon: LogOut,
+          label: 'Kết thúc làm việc',
+          onClick: {
+            type: 'end',
+            handler: handleEnd
+          }
         }
-      },
-      {
-        icon: LogOut,
-        label: 'Kết thúc làm việc',
-        onClick: {
-          type: 'end',
-          handler: handleEnd
-        }
-      }
-    ]
-  },
-  {
-    icon: BookOpen,
-    label: 'Blog',
-    items: [
-      { icon: PenSquare, label: 'Viết bài mới', href: '/blog/new' },
-      { icon: ListOrdered, label: 'Quản lý bài viết', href: '/blog/posts' },
-      { icon: Tags, label: 'Thẻ', href: '/blog/tags' },
-      { icon: FolderOpen, label: 'Danh mục', href: '/blog/categories' },
-    ]
-  },
-  {
-    icon: Wrench,
-    label: 'Tools',
-    items: [
-      { icon: Calculator, label: 'Máy tính', href: '/tools/calculator' },
-      { icon: ArrowLeftRight, label: 'Chuyển đổi tiền tệ', href: '/tools/converter' },
-      { icon: QrCode, label: 'Tạo mã QR', href: '/tools/qr-code' },
-    ]
-  },
-  {
-    icon: Gamepad2,
-    label: 'Games',
-    items: [
-      { icon: Target, label: 'Cờ caro', href: '/games/tic-tac-toe' },
-      { icon: Dices, label: 'Rắn săn mồi', href: '/games/snake' },
-      { icon: Puzzle, label: 'Xếp hình', href: '/games/puzzle' },
-    ]
-  },
-  { icon: Calendar, label: 'Lịch', href: '/calendar' },
-  { icon: MessagesSquare, label: 'Tin nhắn', href: '/messages' },
-  { icon: Settings, label: 'Cài đặt', href: '/settings' },
-];
+      ]
+    },
+    {
+      icon: BookOpen,
+      label: 'Blog',
+      items: [
+        { icon: PenSquare, label: 'Viết bài mới', href: '/blog/new' },
+        { icon: ListOrdered, label: 'Quản lý bài viết', href: '/blog/posts' },
+        { icon: Tags, label: 'Thẻ', href: '/blog/tags' },
+        { icon: FolderOpen, label: 'Danh mục', href: '/blog/categories' },
+      ]
+    },
+    {
+      icon: Wrench,
+      label: 'Tools',
+      items: [
+        { icon: Calculator, label: 'Máy tính', href: '/tools/calculator' },
+        { icon: ArrowLeftRight, label: 'Chuyển đổi tiền tệ', href: '/tools/converter' },
+        { icon: QrCode, label: 'Tạo mã QR', href: '/tools/qr-code' },
+      ]
+    },
+    {
+      icon: Gamepad2,
+      label: 'Games',
+      items: [
+        { icon: Target, label: 'Cờ caro', href: '/games/tic-tac-toe' },
+        { icon: Dices, label: 'Rắn săn mồi', href: '/games/snake' },
+        { icon: Puzzle, label: 'Xếp hình', href: '/games/puzzle' },
+      ]
+    },
+    { icon: Calendar, label: 'Lịch', href: '/calendar' },
+    { icon: MessagesSquare, label: 'Tin nhắn', href: '/messages' },
+    { icon: Settings, label: 'Cài đặt', href: '/settings' },
+  ];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -111,7 +114,7 @@ export default function Sidebar() {
   const { hasAccess, checkGiftCode, extendAccess, getRemainingTime, endAccess } = useMoviesAccess();
   const { isDark, toggleTheme } = useTheme();
 
-  const handleExtend = async (handleClick: () => void) => {
+  const handleExtend = async (handleClick: () => void): Promise<number | boolean> => {
     const result = await Swal.fire({
       title: 'Gia hạn truy cập',
       input: 'number',
@@ -147,7 +150,7 @@ export default function Sidebar() {
       handleClick();
       return hours;
     }
-    return null;
+    return false;
   };
 
   const handleEnd = async (handleClick: () => void) => {

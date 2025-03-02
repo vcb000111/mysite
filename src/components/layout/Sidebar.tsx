@@ -89,7 +89,6 @@ const createMenuItems = (
       icon: Wrench,
       label: 'Tools',
       items: [
-        { icon: Calculator, label: 'Máy tính', href: '/tools/calculator' },
         { icon: ArrowLeftRight, label: 'Chuyển đổi tiền tệ', href: '/tools/converter' },
         { icon: QrCode, label: 'Tạo mã QR', href: '/tools/qr-code' },
       ]
@@ -103,8 +102,6 @@ const createMenuItems = (
         { icon: Puzzle, label: 'Xếp hình', href: '/games/puzzle' },
       ]
     },
-    { icon: Calendar, label: 'Lịch', href: '/calendar' },
-    { icon: MessagesSquare, label: 'Tin nhắn', href: '/messages' },
     { icon: Settings, label: 'Cài đặt', href: '/settings' },
   ];
 
@@ -355,8 +352,8 @@ export default function Sidebar() {
   const giftCodeButton = (
     <button
       onClick={handleGiftCodeClick}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
-        text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full"
+      className="flex items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200
+        text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-sm md:text-base"
     >
       <Plus className="w-5 h-5" />
       {!isCollapsed && <span>Nhập giftcode</span>}
@@ -436,7 +433,7 @@ export default function Sidebar() {
                 {item.href ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                       ${pathname === item.href
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -449,7 +446,7 @@ export default function Sidebar() {
                   <div className="mb-1">
                     <button
                       onClick={() => toggleDropdown(item.label)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base    
                         ${item.items && isParentActive(item.items)
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -474,7 +471,7 @@ export default function Sidebar() {
                             {subItem.onClick ? (
                               <button
                                 onClick={() => handleMenuItemClick(subItem as SubMenuItem)}
-                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm md:text-base
                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
                               >
                                 <subItem.icon className="w-4 h-4" />
@@ -483,7 +480,7 @@ export default function Sidebar() {
                             ) : (
                               <Link
                                 href={subItem.href}
-                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                                   ${pathname === subItem.href
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -507,7 +504,7 @@ export default function Sidebar() {
           <div className="md:hidden mt-2">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               {isDark ? (

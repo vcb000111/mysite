@@ -14,6 +14,8 @@ const MovieSchema = new Schema({
     default: undefined,
     required: true
   },
+  movieUrl: { type: String, default: '' },
+  downloads: { type: Number, default: 0 },
   isFavorite: { type: Boolean, default: false },
   isSeen: { type: Boolean, default: false, required: true },
   createdAt: { type: Date, default: Date.now },

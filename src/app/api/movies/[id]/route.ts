@@ -34,9 +34,19 @@ export async function PUT(request: NextRequest) {
     console.log('Updating movie with ID:', id);
     console.log('Update data:', data);
 
+    // Xử lý tăng số lượt download
+    let updateData = { ...data };
+    if (data.downloads === 1) {
+      const movie = await Movie.findById(id);
+      if (!movie) {
+        return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
+      }
+      updateData.downloads = (movie.downloads || 0) + 1;
+    }
+
     // Đảm bảo cập nhật isSeen nếu có
-    const updateData = {
-      ...data,
+    updateData = {
+      ...updateData,
       updatedAt: Date.now(),
       isSeen: typeof data.isSeen === 'boolean' ? data.isSeen : undefined
     };

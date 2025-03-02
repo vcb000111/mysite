@@ -36,7 +36,7 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkGiftCode = (code: string): boolean => {
-    if (code === '9371') {
+    if (code === '93719371') {
       const expiry = new Date().getTime() + (60 * 60 * 1000); // 1 giờ
       Cookies.set('moviesAccess', JSON.stringify({ expiry }), {
         expires: 1 / 24, // 1 giờ

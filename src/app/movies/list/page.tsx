@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Star, StarOff, Edit, Trash2, X, Link as LinkIcon, Heart, HeartOff, Eye, EyeOff, Check, Image } from 'lucide-react';
+import { Plus, Search, Star, StarOff, Edit, Trash2, X, Link as LinkIcon, Heart, HeartOff, Eye, EyeOff, Check, Image, Download, Calendar, FileText, Link2 } from 'lucide-react';
 import { GradientGenerator } from '@/app/utils/gradients';
 import React from 'react';
 import Swal from 'sweetalert2';
@@ -17,6 +17,8 @@ interface Movie {
   rating: number;
   genre: string[];
   images: string[];
+  movieUrl: string;
+  downloads: number;
   isFavorite: boolean;
   isSeen: boolean;
   releaseDate: string;
@@ -30,6 +32,7 @@ interface MovieInput {
   releaseDate: string;
   actress: string;
   genre: string[];
+  movieUrl?: string;
   images?: string[];
 }
 
@@ -42,6 +45,8 @@ const mockMovies: Movie[] = [
     rating: 8.8,
     genre: ['Action', 'Sci-Fi'],
     images: [],
+    movieUrl: '',
+    downloads: 0,
     isFavorite: true,
     isSeen: false,
     releaseDate: '2010-07-16',
@@ -197,23 +202,45 @@ export default function MovieList() {
     bottom: true
   });
   const [isSingleCardMobile, setIsSingleCardMobile] = useState(true); // Giá trị mặc định
+  const [isQuickEditModalOpen, setIsQuickEditModalOpen] = useState(false);
+  const [quickEditCode, setQuickEditCode] = useState('');
+  const [quickEditUrl, setQuickEditUrl] = useState('');
+  const [editingMovieId, setEditingMovieId] = useState('');
+  const [movieInputValues, setMovieInputValues] = useState<{ [key: string]: string }>({});
 
-  useEffect(() => {
-    const fetchMovies = async () => {
+  const fetchMoviesWithRetry = async (retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
       try {
         setIsLoading(true);
         const response = await fetch('/api/movies');
         if (response.ok) {
           const data = await response.json();
           setMovies(data);
+          return true;
         }
       } catch (error) {
-        console.error('Error fetching movies:', error);
+        console.error(`Attempt ${i + 1} failed:`, error);
+        if (i === retries - 1) {
+          Toast.fire({
+            icon: 'error',
+            title: 'Không thể kết nối tới server. Vui lòng thử lại sau.'
+          });
+          return false;
+        }
+        // Đợi trước khi thử lại
+        await new Promise(resolve => setTimeout(resolve, delay));
       } finally {
         setIsLoading(false);
       }
-    };
+    }
+    return false;
+  };
 
+  const fetchMovies = async () => {
+    return fetchMoviesWithRetry();
+  };
+
+  useEffect(() => {
     fetchMovies();
     setButtonClasses(GradientGenerator.getButtonClasses());
   }, []);
@@ -332,6 +359,8 @@ export default function MovieList() {
         rating: rating,
         genre: movieInput.genre,
         images: movieInput.images || [],
+        movieUrl: '',
+        downloads: 0,
         isFavorite: false,
         isSeen: false
       };
@@ -414,6 +443,7 @@ export default function MovieList() {
         body: JSON.stringify({
           ...movieInput,
           images: movieInput.images || [],
+          movieUrl: movieInput.movieUrl || '',
           isSeen: editingMovie.isSeen,
           isFavorite: editingMovie.isFavorite,
           rating: editingMovie.rating,
@@ -511,6 +541,33 @@ export default function MovieList() {
       ));
     } catch (error) {
       console.error('Error updating seen status:', error);
+    }
+  };
+
+  const handleDownload = async (movieId: string, movieUrl: string) => {
+    try {
+      // Mở link trong tab mới
+      window.open(movieUrl, '_blank');
+
+      // Tăng số lượt download
+      const response = await fetch(`/api/movies/${movieId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ downloads: 1 }), // Server sẽ tự tăng thêm 1
+      });
+
+      if (!response.ok) throw new Error('Failed to update download count');
+
+      const updatedMovie = await response.json();
+
+      // Cập nhật state
+      setMovies(prev => prev.map(movie =>
+        movie._id === movieId ? { ...movie, downloads: updatedMovie.downloads } : movie
+      ));
+    } catch (error) {
+      console.error('Error updating download count:', error);
     }
   };
 
@@ -800,6 +857,70 @@ export default function MovieList() {
     setIsSingleCardMobile(getMobileCardLayout());
   }, []);
 
+  const handleQuickEditSubmit = async () => {
+    try {
+      if (!editingMovieId || !quickEditUrl) return;
+
+      const response = await fetch(`/api/movies/${editingMovieId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieUrl: quickEditUrl
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update movie');
+
+      await Toast.fire({
+        icon: 'success',
+        title: 'Đã cập nhật link phim thành công'
+      });
+
+      // Refresh movie list with retry
+      const fetchSuccess = await fetchMovies();
+      if (!fetchSuccess) {
+        Toast.fire({
+          icon: 'warning',
+          title: 'Đã cập nhật nhưng không thể tải lại danh sách. Vui lòng tải lại trang.'
+        });
+      }
+
+      // Reset form
+      setQuickEditCode('');
+      setQuickEditUrl('');
+      setEditingMovieId('');
+      setIsQuickEditModalOpen(false);
+    } catch (error) {
+      console.error('Error updating movie:', error);
+      await Toast.fire({
+        icon: 'error',
+        title: 'Không thể cập nhật link phim'
+      });
+    }
+  };
+
+  const findMovieByCode = (code: string) => {
+    const movie = movies.find(m => m.code.toLowerCase() === code.toLowerCase());
+    if (movie) {
+      setEditingMovieId(movie._id);
+      setQuickEditUrl(movie.movieUrl || '');
+    } else {
+      setEditingMovieId('');
+      setQuickEditUrl('');
+    }
+  };
+
+  useEffect(() => {
+    // Khởi tạo giá trị ban đầu cho movieInputValues từ danh sách phim
+    const initialValues = movies.reduce((acc, movie) => ({
+      ...acc,
+      [movie._id]: movie.movieUrl || ''
+    }), {});
+    setMovieInputValues(initialValues);
+  }, [movies]);
+
   return (
     <div className="w-full md:p-4">
       {/* Mobile layout toggle button */}
@@ -862,16 +983,36 @@ export default function MovieList() {
         {/* Header */}
         <div className="flex justify-between items-center md:mb-6 mb-2">
           <h1 className="text-2xl font-bold animate-gradient">Danh sách phim</h1>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            className={buttonClasses || 'flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all duration-200 bg-blue-500 hover:bg-blue-600'}
-          >
-            <Plus className="w-5 h-5" />
-            Thêm phim mới
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsQuickEditModalOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg 
+                ${buttonClasses}
+                text-white shadow-lg hover:shadow-xl
+                transform hover:scale-105 active:scale-95
+                transition-all duration-200`}
+            >
+              <Link2 className="w-5 h-5" />
+              <span>Sửa link</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                setShowModal(true);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg 
+                ${buttonClasses}
+                text-white shadow-lg hover:shadow-xl
+                transform hover:scale-105 active:scale-95
+                transition-all duration-200`}
+            >
+              <Plus className="w-5 h-5" />
+              <span>Thêm mới</span>
+            </button>
+          </div>
         </div>
 
         {/* Loading spinner */}
@@ -906,6 +1047,7 @@ export default function MovieList() {
 
                   {searchTerm && (
                     <button
+                      type="button"
                       onClick={() => setSearchTerm('')}
                       className="absolute right-3 top-1/2 -translate-y-1/2
                         text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
@@ -921,6 +1063,8 @@ export default function MovieList() {
               {/* Filter controls */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Quick Edit Button */}
+
                   {/* Checkbox filters */}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-1 cursor-pointer">
@@ -1222,21 +1366,22 @@ export default function MovieList() {
                         <Heart className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-red-500`} fill="currentColor" />
                       </div>
                     ) : movie.genre.some(g => g.includes('4K')) && (
-                      <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
-                        px-1 md:px-1.5 py-0 md:py-1 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      <div className="absolute top-1 md:top-2 right-1 md:right-2 
+                        bg-gradient-to-r from-blue-600 to-purple-600 
+                        px-1.5 md:px-1.5 py-0.5 md:py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
                       >
-                        <span className={`${isSingleCardMobile ? 'text-[11px]' : 'text-[10px]'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
-                          text-yellow-500 bg-clip-text`}>4K</span>
+                        <span className={`${isSingleCardMobile ? 'text-[12px]' : 'text-[11px]'} md:text-sm font-bold 
+                          text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500`}>4K</span>
                       </div>
                     )}
 
                     {/* 4K badge (chỉ hiện khi có cả Favorite) */}
                     {movie.isFavorite && movie.genre.some(g => g.includes('4K')) && (
-                      <div className="absolute top-7 md:top-9 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
-                        px-1 md:px-1.5 md:py-1 py-0 rounded-full shadow-lg z-10 backdrop-blur-sm"
+                      <div className={`absolute top-7 md:top-10 right-1 md:right-2 bg-gradient-to-r from-blue-600 to-purple-600 
+                        ${isSingleCardMobile ? 'px-1 py-0' : 'px-1 py-0'} md:px-1.5 md:py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm`}
                       >
-                        <span className={`${isSingleCardMobile ? 'text-[11px] px-0.5' : 'text-[10px]'} md:text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 
-                          text-yellow-500 bg-clip-text`}>4K</span>
+                        <span className={`${isSingleCardMobile ? 'text-[12px]' : 'text-[11px]'} md:text-sm font-bold 
+                          text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500`}>4K</span>
                       </div>
                     )}
 
@@ -1347,13 +1492,15 @@ export default function MovieList() {
                           {/* Edit button */}
                           <button
                             onClick={() => {
+                              const releaseDate = new Date(movie.releaseDate).toISOString().split('T')[0];
                               setMovieInput({
                                 title: movie.title,
                                 code: movie.code,
                                 poster: movie.poster,
-                                releaseDate: movie.releaseDate,
+                                releaseDate: releaseDate,
                                 actress: movie.actress,
                                 genre: movie.genre,
+                                movieUrl: movie.movieUrl || '',
                                 images: movie.images
                               });
                               setEditingMovie(movie);
@@ -1391,36 +1538,20 @@ export default function MovieList() {
                           transition-colors duration-200
                           ${isSingleCardMobile ? 'text-base leading-5' : 'text-sm leading-4'} md:text-lg md:leading-6`}
                         onClick={() => {
+                          const releaseDate = new Date(movie.releaseDate).toISOString().split('T')[0];
                           setMovieInput({
                             title: movie.title,
                             code: movie.code,
                             poster: movie.poster,
-                            releaseDate: movie.releaseDate,
+                            releaseDate: releaseDate,
                             actress: movie.actress,
                             genre: movie.genre,
+                            movieUrl: movie.movieUrl || '',
                             images: movie.images
                           });
                           setEditingMovie(movie);
                           setShowModal(true);
                         }}
-                        onMouseEnter={(e) => {
-                          const element = e.currentTarget;
-                          const rect = element.getBoundingClientRect();
-                          const viewportWidth = window.innerWidth;
-                          const tooltipWidth = 300;
-
-                          const spaceOnRight = viewportWidth - rect.right;
-                          const showOnRight = spaceOnRight >= tooltipWidth;
-
-                          if (element.scrollHeight > element.clientHeight) {
-                            setShowTooltip({
-                              id: movie._id,
-                              text: movie.title,
-                              position: showOnRight ? 'right' : 'left'
-                            });
-                          }
-                        }}
-                        onMouseLeave={() => setShowTooltip(null)}
                       >
                         {movie.title}
                       </h3>
@@ -1462,10 +1593,16 @@ export default function MovieList() {
                           </React.Fragment>
                         ))}
                       </div>
-                      <span className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 md:text-sm ${isSingleCardMobile ? 'text-base' : 'text-xs'}`}>
-                        <Star className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-yellow-500`} fill="currentColor" />
-                        {movie.rating || 0}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 md:text-sm ${isSingleCardMobile ? 'text-base' : 'text-xs'}`}>
+                          <Star className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-yellow-500`} fill="currentColor" />
+                          {movie.rating || 0}
+                        </span>
+                        <span className={`flex items-center gap-1 text-gray-600 dark:text-gray-400 ${isSingleCardMobile ? 'text-base' : 'text-xs'} md:text-sm`}>
+                          <Download className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4`} />
+                          {movie.downloads || 0}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Actress và Image count */}
@@ -1486,32 +1623,37 @@ export default function MovieList() {
                           </button>
                         ))}
                       </div>
-                      {/* Image count */}
-                      {(movie.images?.length > 0 || movie.poster) && (
-                        <button
-                          onClick={() => {
-                            setPreviewImage(movie.poster);
-                            setPreviewImages([movie.poster, ...(movie.images || [])]);
-                          }}
-                          className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-gray-100 hover:bg-gray-200 
-                            dark:bg-gray-700 dark:hover:bg-gray-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
-                            transition-colors duration-200 group cursor-pointer`}
-                          title="Nhấn để xem tất cả ảnh"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg"
-                            className="w-3 h-3 md:w-4 md:h-4 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 
-                              transition-colors duration-200"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                      <div className="flex items-center gap-2">
+                        {/* Image count */}
+                        {(movie.images?.length > 0 || movie.poster) && (
+                          <button
+                            onClick={() => {
+                              setPreviewImage(movie.poster);
+                              setPreviewImages([movie.poster, ...(movie.images || [])]);
+                            }}
+                            className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-gray-100 hover:bg-gray-200 
+                              dark:bg-gray-700 dark:hover:bg-gray-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
+                              transition-colors duration-200 group cursor-pointer`}
+                            title="Nhấn để xem tất cả ảnh"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200">
-                            {(movie.images?.length || 0) + (movie.poster ? 1 : 0)}
-                          </span>
-                        </button>
-                      )}
+                            <Image className="w-3 h-3 md:w-4 md:h-4" />
+                            <span>{(movie.images?.length || 0) + 1}</span>
+                          </button>
+                        )}
+                        {/* Download button */}
+                        {movie.movieUrl && (
+                          <button
+                            onClick={() => handleDownload(movie._id, movie.movieUrl)}
+                            className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-blue-500 hover:bg-blue-600 
+                              dark:bg-blue-700 dark:hover:bg-blue-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
+                              transition-colors duration-200 group cursor-pointer text-white`}
+                            title="Tải xuống"
+                          >
+                            <Download className="w-3 h-3 md:w-4 md:h-4" />
+                            <span>{movie.downloads || 0}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1755,11 +1897,21 @@ export default function MovieList() {
                         />
                       </div>
 
+                      <input
+                        type="text"
+                        placeholder="Link phim"
+                        value={movieInput.movieUrl || ''}
+                        onChange={(e) => setMovieInput({ ...movieInput, movieUrl: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border dark:border-gray-700
+                          bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                          focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500"
+                      />
+
                       {/* Genre selection */}
                       <div className="space-y-2">
                         <label className="text-sm text-gray-600 dark:text-gray-400">Thể loại</label>
                         <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-lg">
-                          {genres.map(genre => (
+                          {allGenres.map(genre => (
                             <button
                               key={genre}
                               type="button"
@@ -1998,6 +2150,155 @@ export default function MovieList() {
                     transition-all duration-200"
                 >
                   Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Edit Modal */}
+        {isQuickEditModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                Sửa nhanh link phim
+              </h2>
+
+              <div className="overflow-y-auto flex-1 pr-2">
+                <div className="space-y-4">
+                  {movies.map((movie, index) => (
+                    <div
+                      key={movie._id}
+                      className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="w-8 flex-shrink-0 text-center font-medium text-gray-500 dark:text-gray-400">
+                        {index + 1}
+                      </div>
+
+                      <div className="w-32 flex-shrink-0">
+                        <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Mã phim
+                        </span>
+                        <input
+                          type="text"
+                          value={movie.code}
+                          readOnly
+                          className="w-full px-3 py-2 border rounded-md 
+                            border-gray-300 dark:border-gray-600
+                            bg-gray-50 dark:bg-gray-900
+                            text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Link phim
+                          </span>
+                          <span className={`text-sm font-medium ${movieInputValues[movie._id]
+                            ? movieInputValues[movie._id].toLowerCase().includes(movie.code.toLowerCase())
+                              ? 'text-green-500'
+                              : 'text-red-500'
+                            : 'text-gray-500'
+                            }`}>
+                            {movieInputValues[movie._id]
+                              ? movieInputValues[movie._id].toLowerCase().includes(movie.code.toLowerCase())
+                                ? 'Link hợp lệ'
+                                : 'Link không hợp lệ'
+                              : 'Chưa có link'}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            defaultValue={movie.movieUrl}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setMovieInputValues(prev => ({ ...prev, [movie._id]: value }));
+                              setEditingMovieId(movie._id);
+                              setQuickEditUrl(value);
+                            }}
+                            className={`w-full px-3 py-2 border rounded-md 
+                              ${movieInputValues[movie._id] && !movieInputValues[movie._id].toLowerCase().includes(movie.code.toLowerCase())
+                                ? 'border-red-500 dark:border-red-500'
+                                : movieInputValues[movie._id]
+                                  ? 'border-green-500 dark:border-green-500'
+                                  : 'border-gray-300 dark:border-gray-600'
+                              }
+                              bg-white dark:bg-gray-700
+                              text-gray-900 dark:text-gray-100`}
+                            placeholder="Nhập link phim"
+                          />
+                          {movieInputValues[movie._id] && (
+                            <div className="absolute right-0 top-0 h-full flex items-center pr-3">
+                              {movieInputValues[movie._id].toLowerCase().includes(movie.code.toLowerCase()) ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/movies/${movie._id}`, {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                movieUrl: quickEditUrl
+                              }),
+                            });
+
+                            if (!response.ok) throw new Error('Failed to update movie');
+
+                            await Toast.fire({
+                              icon: 'success',
+                              title: 'Đã cập nhật link phim thành công'
+                            });
+
+                            // Refresh movie list
+                            await fetchMovies();
+                          } catch (error) {
+                            console.error('Error updating movie:', error);
+                            await Toast.fire({
+                              icon: 'error',
+                              title: 'Không thể cập nhật link phim'
+                            });
+                          }
+                        }}
+                        className="px-4 py-2 text-sm text-white
+                          bg-blue-500 rounded-md
+                          hover:bg-blue-600
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          whitespace-nowrap"
+                      >
+                        Lưu
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setIsQuickEditModalOpen(false)}
+                  className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300
+                    bg-gray-100 dark:bg-gray-700 rounded-md
+                    hover:bg-gray-200 dark:hover:bg-gray-600
+                    focus:outline-none focus:ring-2 focus:ring-gray-400"
+                >
+                  Đóng
                 </button>
               </div>
             </div>

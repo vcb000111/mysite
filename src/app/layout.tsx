@@ -6,6 +6,7 @@ import ClientLayout from "@/components/layout/ClientLayout";
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import Script from 'next/script';
 import { MoviesAccessProvider } from '@/contexts/MoviesAccessContext';
+import RouteGuard from '@/components/auth/RouteGuard';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,13 +46,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-950`}
       >
         <ThemeProvider>
-          <SidebarProvider>
-            <MoviesAccessProvider>
-              <div className="min-h-screen bg-white dark:bg-gray-950">
-                <ClientLayout>{children}</ClientLayout>
-              </div>
-            </MoviesAccessProvider>
-          </SidebarProvider>
+          <MoviesAccessProvider>
+            <SidebarProvider>
+              <RouteGuard>
+                <div className="min-h-screen bg-white dark:bg-gray-950">
+                  <ClientLayout>{children}</ClientLayout>
+                </div>
+              </RouteGuard>
+            </SidebarProvider>
+          </MoviesAccessProvider>
         </ThemeProvider>
       </body>
     </html>

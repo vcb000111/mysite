@@ -1000,36 +1000,6 @@ export default function MovieList() {
         {/* Header */}
         <div className="flex justify-between items-center md:mb-6 mb-2">
           <h1 className="text-2xl font-bold animate-gradient">Danh sách phim</h1>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setIsQuickEditModalOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg 
-                ${buttonClasses}
-                text-white shadow-lg hover:shadow-xl
-                transform hover:scale-105 active:scale-95
-                transition-all duration-200`}
-            >
-              <Link2 className="w-5 h-5" />
-              <span>Sửa link</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg 
-                ${buttonClasses}
-                text-white shadow-lg hover:shadow-xl
-                transform hover:scale-105 active:scale-95
-                transition-all duration-200`}
-            >
-              <Plus className="w-5 h-5" />
-              <span>Thêm mới</span>
-            </button>
-          </div>
         </div>
 
         {/* Loading spinner */}
@@ -1080,37 +1050,8 @@ export default function MovieList() {
               {/* Filter controls */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Quick Edit Button */}
-
                   {/* Checkbox filters */}
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showSeen}
-                        onChange={(e) => setShowSeen(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                          focus:ring-blue-500 dark:border-gray-600
-                          dark:focus:ring-offset-gray-800"
-                      />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Đã xem
-                      </span>
-                    </label>
-
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showFavorite}
-                        onChange={(e) => setShowFavorite(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-500 
-                          focus:ring-blue-500 dark:border-gray-600
-                          dark:focus:ring-offset-gray-800"
-                      />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Yêu thích
-                      </span>
-                    </label>
 
                     <label className="flex items-center gap-1 cursor-pointer">
                       <input
@@ -1328,15 +1269,6 @@ export default function MovieList() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
 
-                    {/* Seen badge */}
-                    {movie.isSeen && (
-                      <div className="absolute top-1 md:top-2 left-1 md:left-2 bg-white/90 dark:bg-gray-800/90 
-                        p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
-                      >
-                        <Eye className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-green-500`} fill="currentColor" />
-                      </div>
-                    )}
-
                     {/* Genre badges */}
                     <div className="absolute bottom-1 md:bottom-2 left-1 md:left-2 z-10">
                       <div className="flex flex-col space-y-0.5 md:space-y-1">
@@ -1375,14 +1307,8 @@ export default function MovieList() {
                       }).split('/').join('-')}
                     </div>
 
-                    {/* Favorite hoặc 4K badge (ở cùng vị trí) */}
-                    {movie.isFavorite ? (
-                      <div className="absolute top-1 md:top-2 right-1 md:right-2 bg-white/90 dark:bg-gray-800/90 
-                        p-1 md:p-1.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
-                      >
-                        <Heart className={`${isSingleCardMobile ? 'w-4 h-4' : 'w-3 h-3'} md:w-4 md:h-4 text-red-500`} fill="currentColor" />
-                      </div>
-                    ) : movie.genre.some(g => g.includes('4K')) && (
+                    {/* 4K badge */}
+                    {movie.genre.some(g => g.includes('4K')) && (
                       <div className="absolute top-1 md:top-2 right-1 md:right-2 
                         bg-gradient-to-r from-blue-600 to-purple-600 
                         px-1.5 md:px-1.5 py-0.5 md:py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm"
@@ -1391,155 +1317,6 @@ export default function MovieList() {
                           text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500`}>4K</span>
                       </div>
                     )}
-
-                    {/* 4K badge (chỉ hiện khi có cả Favorite) */}
-                    {movie.isFavorite && movie.genre.some(g => g.includes('4K')) && (
-                      <div className={`absolute top-7 md:top-10 right-1 md:right-2 bg-gradient-to-r from-blue-600 to-purple-600 
-                        ${isSingleCardMobile ? 'px-1 py-0' : 'px-1 py-0'} md:px-1.5 md:py-0.5 rounded-full shadow-lg z-10 backdrop-blur-sm`}
-                      >
-                        <span className={`${isSingleCardMobile ? 'text-[12px]' : 'text-[11px]'} md:text-sm font-bold 
-                          text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500`}>4K</span>
-                      </div>
-                    )}
-
-                    {/* Overlay khi hover */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40
-                      transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
-                    >
-                      <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        {/* Action buttons */}
-                        <div className="flex items-center justify-center gap-1 md:gap-2">
-                          {/* Seen button */}
-                          <button
-                            onClick={() => handleToggleSeen(movie._id, movie.isSeen)}
-                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
-                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                          >
-                            {movie.isSeen ? (
-                              <Eye className="w-4 h-4 md:w-5 md:h-5 text-green-500" fill="currentColor" />
-                            ) : (
-                              <EyeOff className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                            )}
-                          </button>
-
-                          {/* Favorite button */}
-                          <button
-                            onClick={() => handleToggleFavorite(movie._id, movie.isFavorite)}
-                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
-                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                          >
-                            {movie.isFavorite ? (
-                              <Heart className="w-4 h-4 md:w-5 md:h-5 text-red-500" fill="currentColor" />
-                            ) : (
-                              <HeartOff className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                            )}
-                          </button>
-
-                          {/* Rating button */}
-                          <div className="relative">
-                            <button
-                              onClick={() => setShowRating(movie._id)}
-                              className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
-                                hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                            >
-                              <Star
-                                className="w-4 h-4 md:w-5 md:h-5 text-yellow-500"
-                                fill={movie.rating > 0 ? "currentColor" : "none"}
-                              />
-                            </button>
-
-                            {/* Rating popup */}
-                            {showRating === movie._id && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-1 md:p-2
-                                bg-white dark:bg-gray-800 rounded-lg shadow-xl
-                                border border-gray-100 dark:border-gray-700
-                                transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100
-                                transition-all duration-200 z-50"
-                              >
-                                <div className="flex items-center gap-0.5 md:gap-1 px-1 md:px-2 py-0.5 md:py-1">
-                                  {[...Array(10)].map((_, index) => (
-                                    <button
-                                      key={index}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRating(movie._id, index + 1);
-                                        setShowRating(null);
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        const stars = e.currentTarget.parentElement?.children;
-                                        if (stars) {
-                                          for (let i = 0; i <= index; i++) {
-                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.add('text-yellow-500');
-                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.add('fill-current');
-                                          }
-                                          for (let i = index + 1; i < stars.length; i++) {
-                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('text-yellow-500');
-                                            (stars[i] as HTMLElement).querySelector('svg')?.classList.remove('fill-current');
-                                          }
-                                        }
-                                      }}
-                                      onMouseLeave={() => {
-                                        if (!showRating) return;
-                                        const stars = document.querySelectorAll('.rating-star');
-                                        stars.forEach((star, i) => {
-                                          if (i < movie.rating) {
-                                            star.classList.add('text-yellow-500');
-                                            star.classList.add('fill-current');
-                                          } else {
-                                            star.classList.remove('text-yellow-500');
-                                            star.classList.remove('fill-current');
-                                          }
-                                        });
-                                      }}
-                                      className="p-0.5 md:p-1 hover:scale-110 transition-transform"
-                                    >
-                                      <Star
-                                        className={`w-3 h-3 md:w-4 md:h-4 rating-star ${index < movie.rating
-                                          ? 'text-yellow-500 fill-current'
-                                          : 'text-gray-300 dark:text-gray-600'
-                                          }`}
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Edit button */}
-                          <button
-                            onClick={() => {
-                              const releaseDate = new Date(movie.releaseDate).toISOString().split('T')[0];
-                              setMovieInput({
-                                title: movie.title,
-                                code: movie.code,
-                                poster: movie.poster,
-                                releaseDate: releaseDate,
-                                actress: movie.actress,
-                                genre: movie.genre,
-                                movieUrl: movie.movieUrl || '',
-                                images: movie.images
-                              });
-                              setEditingMovie(movie);
-                              setShowModal(true);
-                            }}
-                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
-                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                          >
-                            <Edit className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
-                          </button>
-
-                          {/* Delete button */}
-                          <button
-                            onClick={() => setDeletingMovie(movie)}
-                            className="bg-white dark:bg-gray-800 p-1 md:p-2 rounded-full shadow-lg
-                              hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                          >
-                            <Trash2 className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Movie info */}
@@ -1551,24 +1328,8 @@ export default function MovieList() {
                     >
                       <h3
                         className={`font-semibold text-gray-800 dark:text-white
-                          line-clamp-3 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400
-                          transition-colors duration-200
+                          line-clamp-3
                           ${isSingleCardMobile ? 'text-base leading-5' : 'text-sm leading-4'} md:text-lg md:leading-6`}
-                        onClick={() => {
-                          const releaseDate = new Date(movie.releaseDate).toISOString().split('T')[0];
-                          setMovieInput({
-                            title: movie.title,
-                            code: movie.code,
-                            poster: movie.poster,
-                            releaseDate: releaseDate,
-                            actress: movie.actress,
-                            genre: movie.genre,
-                            movieUrl: movie.movieUrl || '',
-                            images: movie.images
-                          });
-                          setEditingMovie(movie);
-                          setShowModal(true);
-                        }}
                       >
                         {movie.title}
                       </h3>

@@ -30,6 +30,7 @@ interface SubMenuItem {
     type: 'extend' | 'end';
     handler: (handleClick: () => void) => Promise<boolean | number>;
   };
+  requiresAdmin?: boolean;
 }
 
 const createMenuItems = (
@@ -45,17 +46,26 @@ const createMenuItems = (
         {
           icon: ListVideo,
           label: 'Danh sách phim',
-          href: '/movies/list'
+          href: '/movies/list',
+          requiresAdmin: true
+        },
+        {
+          icon: ListVideo,
+          label: 'Danh sách phim (Xem)',
+          href: '/movies/view',
+          requiresAdmin: false
         },
         {
           icon: Clapperboard,
           label: 'Thể loại',
-          href: '/movies/categories'
+          href: '/movies/categories',
+          requiresAdmin: true
         },
         {
           icon: Star,
           label: 'Kiểm tra phim',
-          href: '/movies/check'
+          href: '/movies/check',
+          requiresAdmin: true
         },
         {
           icon: Clock,
@@ -108,7 +118,7 @@ const createMenuItems = (
 export default function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const { hasAccess, checkGiftCode, extendAccess, getRemainingTime, endAccess } = useMoviesAccess();
+  const { hasAccess, isAdmin, checkGiftCode, extendAccess, getRemainingTime, endAccess, canAccessRoute } = useMoviesAccess();
   const { isDark, toggleTheme } = useTheme();
 
   const handleExtend = async (handleClick: () => void): Promise<number | boolean> => {
@@ -422,11 +432,23 @@ export default function Sidebar() {
             const hasDropdown = !!item.items;
             const isOpen = openDropdown === item.label;
 
+            // Lọc các submenu dựa trên quyền truy cập
+            const accessibleItems = item.items?.filter(subItem => {
+              if (subItem.requiresAdmin && !isAdmin) return false;
+              if (subItem.href && !canAccessRoute(subItem.href)) return false;
+              return true;
+            });
+
+            // Nếu không có submenu nào có quyền truy cập, ẩn cả menu cha
+            if (hasDropdown && (!accessibleItems || accessibleItems.length === 0)) {
+              return null;
+            }
+
             const isActive = item.href === '/'
               ? pathname === '/'
               : item.href
                 ? pathname === item.href
-                : item.items?.some(subItem => isSubMenuActive(subItem.href));
+                : accessibleItems?.some(subItem => isSubMenuActive(subItem.href));
 
             return (
               <div key={item.label} className="mb-1">
@@ -447,7 +469,7 @@ export default function Sidebar() {
                     <button
                       onClick={() => toggleDropdown(item.label)}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base    
-                        ${item.items && isParentActive(item.items)
+                        ${accessibleItems && isParentActive(accessibleItems)
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
@@ -456,7 +478,7 @@ export default function Sidebar() {
                         <Icon className="w-4 h-4" />
                         {!isCollapsed && <span>{item.label}</span>}
                       </div>
-                      {!isCollapsed && (
+                      {!isCollapsed && hasDropdown && accessibleItems && accessibleItems.length > 0 && (
                         <ChevronDown
                           className={`w-3 h-3 transition-transform duration-200
                             ${openDropdown === item.label ? 'rotate-180' : ''}`}
@@ -464,13 +486,13 @@ export default function Sidebar() {
                       )}
                     </button>
 
-                    {(openDropdown === item.label || isCollapsed) && (
+                    {(openDropdown === item.label || isCollapsed) && accessibleItems && (
                       <div className={`mt-1 space-y-1 ${isCollapsed ? 'relative' : 'ml-3'}`}>
-                        {item.items?.map((subItem: any) => (
+                        {accessibleItems.map((subItem) => (
                           <div key={subItem.href || subItem.label}>
                             {subItem.onClick ? (
                               <button
-                                onClick={() => handleMenuItemClick(subItem as SubMenuItem)}
+                                onClick={() => handleMenuItemClick(subItem)}
                                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm md:text-base
                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
                               >
@@ -479,7 +501,7 @@ export default function Sidebar() {
                               </button>
                             ) : (
                               <Link
-                                href={subItem.href}
+                                href={subItem.href || '#'}
                                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                                   ${pathname === subItem.href
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'

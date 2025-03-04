@@ -607,8 +607,8 @@ export default function MovieList() {
       }
 
       // Log để debug
-      console.log('Parsed Info:', info);
-      console.log('Original Text:', text);
+      // console.log('Parsed Info:', info);
+      // console.log('Original Text:', text);
 
       return Object.keys(info).length > 0 ? info : null;
     } catch (error) {
@@ -639,7 +639,7 @@ export default function MovieList() {
           ...movieInfo,
           rating
         };
-        console.log('Movie data with rating:', movieData);
+        // console.log('Movie data with rating:', movieData);
       }
 
       setPasteText('');

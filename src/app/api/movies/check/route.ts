@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const number = codeMatch[2];
     const normalizedCode = `${prefix}${number}`;
 
-    console.log('Searching for code:', normalizedCode);
+    // console.log('Searching for code:', normalizedCode);
 
     // Tìm kiếm trong database
     const movie = await Movie.findOne({
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       ]
     });
 
-    console.log('Found movie:', movie);
+    // console.log('Found movie:', movie);
 
     return NextResponse.json({
       exists: !!movie,

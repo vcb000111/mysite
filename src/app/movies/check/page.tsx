@@ -19,7 +19,6 @@ interface MovieInfo {
 
 interface FileInfo {
   name: string;
-  path: string;
   size: number;
   exists?: boolean;
   loading?: boolean;
@@ -35,7 +34,6 @@ interface CheckResponse {
 interface ExportFileInfo {
   originalName: string;
   cleanName: string;
-  path: string;
   size: number;
 }
 
@@ -127,6 +125,69 @@ export default function CheckMovies() {
     return isRecycledName || isInRecycleBin;
   };
 
+  // Sửa lại hàm xử lý chọn thư mục
+  const handleFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const fileList = event.target.files;
+      if (!fileList || fileList.length === 0) return;
+
+      setIsScanning(true);
+      clearData();
+
+      const newFiles: FileInfo[] = [];
+      const MIN_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (isVideoFile(file.name) &&
+          !isSystemFile(file.name) &&
+          !isRecycleBinFile(file.name, file.webkitRelativePath) &&
+          file.size >= MIN_FILE_SIZE) {
+          const searchName = cleanFileName(file.name);
+          newFiles.push({
+            name: file.name,
+            size: file.size,
+            exists: false,
+            loading: false,
+            searchName
+          });
+        }
+      }
+
+      // Sắp xếp theo tên file
+      newFiles.sort((a, b) => a.searchName?.localeCompare(b.searchName || '') || 0);
+
+      if (newFiles.length === 0) {
+        Toast.fire({
+          icon: 'info',
+          title: 'Không tìm thấy file phim nào'
+        });
+      } else {
+        Toast.fire({
+          icon: 'success',
+          title: `Đã tìm thấy ${newFiles.length} file phim`
+        });
+      }
+
+      setFiles(newFiles);
+      setIsScanning(false);
+      event.target.value = '';
+
+      // Kiểm tra phim sau khi đã có danh sách
+      setTimeout(() => {
+        newFiles.forEach(file => checkMovie(file));
+      }, 100);
+
+    } catch (error) {
+      console.error('Lỗi khi quét thư mục:', error);
+      setIsScanning(false);
+      Toast.fire({
+        icon: 'error',
+        title: 'Có lỗi xảy ra khi quét thư mục'
+      });
+    }
+  };
+
   // Sửa lại hàm xử lý xuất file
   const handleExportFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -152,7 +213,6 @@ export default function CheckMovies() {
           const fileInfo: ExportFileInfo = {
             originalName: file.name,
             cleanName: cleanName,
-            path: file.webkitRelativePath,
             size: file.size
           };
 
@@ -200,68 +260,6 @@ export default function CheckMovies() {
     }
   };
 
-  // Sửa lại hàm xử lý chọn thư mục
-  const handleFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const fileList = event.target.files;
-      if (!fileList || fileList.length === 0) return;
-
-      setIsScanning(true);
-      clearData();
-
-      const firstFile = fileList[0];
-      const folderPath = firstFile.webkitRelativePath.split('/')[0];
-      setCurrentFolder(folderPath);
-
-      const newFiles: FileInfo[] = [];
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
-        if (isVideoFile(file.name) &&
-          !isSystemFile(file.name) &&
-          !isRecycleBinFile(file.name, file.webkitRelativePath)) {
-          const searchName = cleanFileName(file.name);
-          newFiles.push({
-            name: file.name,
-            path: file.webkitRelativePath,
-            size: file.size,
-            exists: false,
-            loading: false,
-            searchName
-          });
-        }
-      }
-
-      newFiles.sort((a, b) => a.searchName?.localeCompare(b.searchName || '') || 0);
-
-      if (newFiles.length === 0) {
-        Toast.fire({
-          icon: 'info',
-          title: 'Không tìm thấy file phim nào'
-        });
-      } else {
-        Toast.fire({
-          icon: 'success',
-          title: `Đã tìm thấy ${newFiles.length} file phim`
-        });
-      }
-
-      setFiles(newFiles);
-      setIsScanning(false);
-      event.target.value = '';
-
-      setTimeout(() => {
-        newFiles.forEach(file => checkMovie(file));
-      }, 100);
-    } catch (error) {
-      console.error('Lỗi khi chọn thư mục:', error);
-      setIsScanning(false);
-      Toast.fire({
-        icon: 'error',
-        title: 'Có lỗi xảy ra khi quét thư mục'
-      });
-    }
-  };
-
   // Kiểm tra có phải file video không
   const isVideoFile = (filename: string) => {
     const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv'];
@@ -299,7 +297,7 @@ export default function CheckMovies() {
     try {
       // Cập nhật trạng thái loading
       setFiles(prev => prev.map(f =>
-        f.path === file.path ? { ...f, loading: true } : f
+        f.searchName === file.searchName ? { ...f, loading: true } : f
       ));
 
       // Gọi API để kiểm tra phim
@@ -313,7 +311,7 @@ export default function CheckMovies() {
 
       // Cập nhật kết quả
       setFiles(prev => prev.map(f =>
-        f.path === file.path ? {
+        f.searchName === file.searchName ? {
           ...f,
           exists: data.exists,
           loading: false,
@@ -323,7 +321,7 @@ export default function CheckMovies() {
     } catch (error) {
       console.error('Lỗi khi kiểm tra phim:', error);
       setFiles(prev => prev.map(f =>
-        f.path === file.path ? { ...f, loading: false } : f
+        f.searchName === file.searchName ? { ...f, loading: false } : f
       ));
     }
   };
@@ -367,7 +365,6 @@ export default function CheckMovies() {
       .filter(line => line.trim())
       .map(filename => ({
         name: filename.trim(),
-        path: filename.trim(),
         size: 0,
         exists: false,
         loading: false,
@@ -580,7 +577,7 @@ export default function CheckMovies() {
             <div className="grid gap-4">
               {filteredFiles.map((file, index) => (
                 <div
-                  key={file.path}
+                  key={`${file.searchName}-${index}`}
                   className="flex items-center justify-between p-4 rounded-lg
                     bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-700"
                 >
@@ -721,18 +718,49 @@ export default function CheckMovies() {
 
         {/* Export Modal */}
         {showExportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h2 className="text-2xl font-bold mb-4">Xuất tên file</h2>
-              <div className="flex flex-col gap-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold animate-gradient-slow bg-gradient-to-r from-pink-500 via-purple-500 to-violet-500 bg-clip-text text-transparent bg-300% hover:bg-pos-100">
+                  Xuất tên file
+                </h2>
+                {duplicateFiles.length > 0 && (
+                  <div className="text-sm text-red-500 dark:text-red-400">
+                    Có {duplicateFiles.length} file trùng lặp
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 overflow-y-auto">
+                <div className="grid grid-cols-[auto,1fr,1fr] gap-4 px-4 py-2 font-medium text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                  <div className="w-12 text-center">#</div>
+                  <div>Tên gốc</div>
+                  <div>Mã phim</div>
+                </div>
                 {exportFiles.map((file, index) => (
-                  <div key={file.originalName} className="flex items-center justify-between">
-                    <span>{file.originalName}</span>
-                    <span>{file.cleanName}</span>
+                  <div
+                    key={`${file.cleanName}-${index}`}
+                    className={`grid grid-cols-[auto,1fr,1fr] gap-4 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200
+                      border-b dark:border-gray-700/50 last:border-0
+                      ${duplicateFiles.includes(file.cleanName)
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                  >
+                    <div className="w-12 text-center font-medium text-gray-400 dark:text-gray-500">
+                      {index + 1}
+                    </div>
+                    <div className="truncate">
+                      {file.originalName}
+                    </div>
+                    <div className="font-medium">
+                      {file.cleanName}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-4">
+
+              <div className="mt-6 pt-4 border-t dark:border-gray-700 flex justify-end gap-4">
                 <button
                   onClick={copyToClipboard}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all duration-200
@@ -744,8 +772,8 @@ export default function CheckMovies() {
                 </button>
                 <button
                   onClick={() => setShowExportModal(false)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 
-                    hover:text-gray-800 dark:hover:text-gray-200 transition-all duration-200
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300
+                    hover:text-gray-800 dark:hover:text-white transition-all duration-200
                     transform hover:scale-105 active:scale-95"
                 >
                   <X className="w-5 h-5" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Folder, Search, RefreshCw, Check, X, AlertCircle, Film, Calendar, Star, FileText, Trash2, CheckCircle, Download, Copy } from 'lucide-react';
 import Image from 'next/image';
 import Swal from 'sweetalert2';
@@ -64,8 +64,70 @@ export default function CheckMovies() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFiles, setExportFiles] = useState<ExportFileInfo[]>([]);
   const [duplicateFiles, setDuplicateFiles] = useState<string[]>([]);
+  const [isLoadingDatabase, setIsLoadingDatabase] = useState(false);
+  const [movieDatabase, setMovieDatabase] = useState<Map<string, MovieInfo>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const exportInputRef = useRef<HTMLInputElement>(null);
+
+  // Thêm hàm fetch toàn bộ database
+  const fetchMovieDatabase = async () => {
+    try {
+      setIsLoadingDatabase(true);
+      const response = await fetch('/api/movies/all');
+      const data: MovieInfo[] = await response.json();
+
+      // Lưu vào Map để tìm kiếm nhanh hơn
+      const movieMap = new Map<string, MovieInfo>();
+      data.forEach(movie => {
+        // Lưu theo code không có dấu gạch ngang
+        const cleanCode = movie.code.replace('-', '').toLowerCase();
+        movieMap.set(cleanCode, movie);
+      });
+
+      setMovieDatabase(movieMap);
+      setIsLoadingDatabase(false);
+    } catch (error) {
+      console.error('Lỗi khi tải database:', error);
+      setIsLoadingDatabase(false);
+      Toast.fire({
+        icon: 'error',
+        title: 'Không thể tải dữ liệu phim'
+      });
+    }
+  };
+
+  // Thêm useEffect để fetch database khi component mount
+  useEffect(() => {
+    fetchMovieDatabase();
+  }, []);
+
+  // Sửa lại hàm kiểm tra phim
+  const checkMovie = (file: FileInfo): FileInfo => {
+    if (!file.searchName) return file;
+
+    // Tìm trong database đã cache
+    const movie = movieDatabase.get(file.searchName.toLowerCase());
+
+    return {
+      ...file,
+      exists: !!movie,
+      loading: false,
+      movie: movie || undefined
+    };
+  };
+
+  // Sửa lại hàm kiểm tra tất cả
+  const checkAllMovies = () => {
+    if (isLoadingDatabase) {
+      Toast.fire({
+        icon: 'info',
+        title: 'Đang tải dữ liệu phim, vui lòng đợi'
+      });
+      return;
+    }
+
+    setFiles(prev => prev.map(file => checkMovie(file)));
+  };
 
   // Hàm để chọn thư mục
   const handleSelectFolder = () => {
@@ -131,6 +193,14 @@ export default function CheckMovies() {
       const fileList = event.target.files;
       if (!fileList || fileList.length === 0) return;
 
+      if (isLoadingDatabase) {
+        Toast.fire({
+          icon: 'info',
+          title: 'Đang tải dữ liệu phim, vui lòng đợi'
+        });
+        return;
+      }
+
       setIsScanning(true);
       clearData();
 
@@ -163,20 +233,18 @@ export default function CheckMovies() {
           title: 'Không tìm thấy file phim nào'
         });
       } else {
+        // Kiểm tra ngay lập tức với database đã cache
+        const checkedFiles = newFiles.map(file => checkMovie(file));
+        setFiles(checkedFiles);
+
         Toast.fire({
           icon: 'success',
           title: `Đã tìm thấy ${newFiles.length} file phim`
         });
       }
 
-      setFiles(newFiles);
       setIsScanning(false);
       event.target.value = '';
-
-      // Kiểm tra phim sau khi đã có danh sách
-      setTimeout(() => {
-        newFiles.forEach(file => checkMovie(file));
-      }, 100);
 
     } catch (error) {
       console.error('Lỗi khi quét thư mục:', error);
@@ -292,49 +360,6 @@ export default function CheckMovies() {
     return `${size.toFixed(2)} ${units[unitIndex]}`;
   };
 
-  // Hàm để kiểm tra phim trong CSDL
-  const checkMovie = async (file: FileInfo) => {
-    try {
-      // Cập nhật trạng thái loading
-      setFiles(prev => prev.map(f =>
-        f.searchName === file.searchName ? { ...f, loading: true } : f
-      ));
-
-      // Gọi API để kiểm tra phim
-      const response = await fetch('/api/movies/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.searchName })
-      });
-
-      const data: CheckResponse = await response.json();
-
-      // Cập nhật kết quả
-      setFiles(prev => prev.map(f =>
-        f.searchName === file.searchName ? {
-          ...f,
-          exists: data.exists,
-          loading: false,
-          movie: data.movie || undefined
-        } : f
-      ));
-    } catch (error) {
-      console.error('Lỗi khi kiểm tra phim:', error);
-      setFiles(prev => prev.map(f =>
-        f.searchName === file.searchName ? { ...f, loading: false } : f
-      ));
-    }
-  };
-
-  // Kiểm tra tất cả phim
-  const checkAllMovies = () => {
-    files.forEach(file => {
-      if (!file.exists && !file.loading) {
-        checkMovie(file);
-      }
-    });
-  };
-
   // Lọc files theo search term
   const filteredFiles = files.filter(file =>
     file.searchName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -354,9 +379,17 @@ export default function CheckMovies() {
     return code;
   };
 
-  // Xử lý khi paste danh sách
+  // Sửa lại hàm xử lý paste danh sách
   const handlePasteList = () => {
     if (!pasteContent.trim()) return;
+
+    if (isLoadingDatabase) {
+      Toast.fire({
+        icon: 'info',
+        title: 'Đang tải dữ liệu phim, vui lòng đợi'
+      });
+      return;
+    }
 
     clearData();
 
@@ -379,16 +412,15 @@ export default function CheckMovies() {
       return;
     }
 
-    setFiles(fileList);
+    // Kiểm tra ngay với database đã cache
+    const checkedFiles = fileList.map(file => checkMovie(file));
+    setFiles(checkedFiles);
     setPasteContent('');
+
     Toast.fire({
       icon: 'success',
-      title: `Đã thêm ${fileList.length} phim để kiểm tra`
+      title: `Đã kiểm tra ${fileList.length} phim`
     });
-
-    setTimeout(() => {
-      fileList.forEach(file => checkMovie(file));
-    }, 100);
   };
 
   // Thêm hàm xử lý xuất tên file

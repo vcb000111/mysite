@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import Link from 'next/link';
-import { Plus, Search, Star, StarOff, Edit, Trash2, X, Link as LinkIcon, Heart, HeartOff, Eye, EyeOff, Check, Image, Download, Calendar, FileText, Link2 } from 'lucide-react';
+import { Plus, Search, Star, Edit, Trash2, X, Link as Heart, HeartOff, Eye, EyeOff, Image, Download, Link2 } from 'lucide-react';
 import { GradientGenerator } from '@/app/utils/gradients';
 import React from 'react';
 import Swal from 'sweetalert2';
@@ -35,26 +34,6 @@ interface MovieInput {
   movieUrl?: string;
   images?: string[];
 }
-
-const mockMovies: Movie[] = [
-  {
-    _id: '1',
-    title: 'Inception',
-    poster: 'https://placehold.co/300x450',
-    year: 2010,
-    rating: 8.8,
-    genre: ['Action', 'Sci-Fi'],
-    images: [],
-    movieUrl: '',
-    downloads: 0,
-    isFavorite: true,
-    isSeen: false,
-    releaseDate: '2010-07-16',
-    code: 'tt0133093',
-    actress: 'Leonardo DiCaprio',
-    createdAt: '2024-04-01T12:00:00'
-  }
-];
 
 // Thêm Toast helper ở đầu file
 const Toast = Swal.mixin({
@@ -162,7 +141,6 @@ export default function MovieList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [movieUrl, setMovieUrl] = useState('');
   const [movieInput, setMovieInput] = useState<MovieInput>({
     title: '',
     code: '',

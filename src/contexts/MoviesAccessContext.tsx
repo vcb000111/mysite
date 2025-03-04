@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 interface MoviesAccessContextType {
   hasAccess: boolean;
@@ -35,12 +36,12 @@ const getInitialState = () => {
 };
 
 export function MoviesAccessProvider({ children }: { children: ReactNode }) {
-  // Khởi tạo state với giá trị từ cookie
   const [{ hasAccess, isAdmin }, setState] = useState(getInitialState());
+  const router = useRouter();
 
   // Danh sách route chỉ dành cho admin
   const ADMIN_ONLY_ROUTES = [
-    '/movies/list',
+    '/movies/manage',
     '/movies/categories',
     '/movies/check'
   ];
@@ -61,22 +62,29 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
   // Kiểm tra quyền truy cập route
   const canAccessRoute = (route: string): boolean => {
     // Cho phép truy cập các route công khai
-    if (PUBLIC_ROUTES.some(publicRoute => route.startsWith(publicRoute))) {
+    if (PUBLIC_ROUTES.some(publicRoute => route === publicRoute || route.startsWith(publicRoute + '/'))) {
       return true;
     }
 
-    // Nếu là admin, cho phép truy cập tất cả
-    if (isAdmin) {
-      return true;
+    // Kiểm tra route admin
+    const isAdminRoute = ADMIN_ONLY_ROUTES.some(adminRoute =>
+      route === adminRoute || route.startsWith(adminRoute + '/')
+    );
+
+    // Nếu là route admin
+    if (isAdminRoute) {
+      // Chỉ admin mới có quyền truy cập
+      return isAdmin;
     }
 
-    // Nếu là route admin mà không phải admin thì chặn
-    if (ADMIN_ONLY_ROUTES.some(adminRoute => route.startsWith(adminRoute))) {
-      return false;
-    }
+    // Kiểm tra route được bảo vệ
+    const isProtectedRoute = PROTECTED_ROUTES.some(protectedRoute =>
+      route === protectedRoute || route.startsWith(protectedRoute + '/')
+    );
 
-    // Nếu là route được bảo vệ thì cần hasAccess
-    if (PROTECTED_ROUTES.some(protectedRoute => route.startsWith(protectedRoute))) {
+    // Nếu là route được bảo vệ
+    if (isProtectedRoute) {
+      // Cần có quyền truy cập
       return hasAccess;
     }
 
@@ -86,10 +94,31 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
 
   // Kiểm tra và cập nhật trạng thái từ cookie
   useEffect(() => {
+    let isFirstRun = true;
+
     const checkAccess = () => {
       const newState = getInitialState();
-      setState(newState);
+      const hasStateChanged = newState.hasAccess !== hasAccess || newState.isAdmin !== isAdmin;
+
+      if (hasStateChanged) {
+        setState(newState);
+      }
+
+      // Chỉ kiểm tra và redirect khi:
+      // 1. Không phải lần chạy đầu tiên (để tránh redirect không cần thiết khi load trang)
+      // 2. Trạng thái đã thay đổi (để tránh redirect liên tục)
+      if (!isFirstRun && hasStateChanged) {
+        const currentPath = window.location.pathname;
+        if (!canAccessRoute(currentPath)) {
+          router.push('/');
+        }
+      }
+
+      isFirstRun = false;
     };
+
+    // Kiểm tra ngay khi mount
+    checkAccess();
 
     // Kiểm tra mỗi phút
     const interval = setInterval(checkAccess, 60000);
@@ -106,14 +135,16 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [router, hasAccess, isAdmin]);
 
   const checkGiftCode = (code: string): boolean => {
-    const isAdminCode = code === '93719371';
-    const isUserCode = code === '9999';
+    const currentDate = new Date();
+    const ddMMyyyy = `${String(currentDate.getDate()).padStart(2, '0')}${String(currentDate.getMonth() + 1).padStart(2, '0')}${currentDate.getFullYear()}`;
+    const isAdminCode = code === `${ddMMyyyy}9371`;
+    const isUserCode = code === `${ddMMyyyy}9999`;
 
     if (isAdminCode || isUserCode) {
-      const hours = isAdminCode ? 24 : 1;
+      const hours = 1; // Đặt thời gian cho admin là 2 giờ
       const expiry = new Date().getTime() + (hours * 60 * 60 * 1000);
       const newState = { hasAccess: true, isAdmin: isAdminCode };
 
@@ -129,7 +160,6 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
 
       // Cập nhật state
       setState(newState);
-
       return true;
     }
 
@@ -188,6 +218,7 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
   const endAccess = () => {
     Cookies.remove('moviesAccess');
     setState({ hasAccess: false, isAdmin: false });
+    router.push('/');
   };
 
   return (

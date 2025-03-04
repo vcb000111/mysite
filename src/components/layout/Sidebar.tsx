@@ -44,14 +44,14 @@ const createMenuItems = (
       requiresAccess: true,
       items: [
         {
-          icon: ListVideo,
-          label: 'Danh sách phim',
-          href: '/movies/list',
+          icon: Wrench, // Đổi icon sang Wrench để phù hợp với quản lý
+          label: 'Quản lý phim',
+          href: '/movies/manage',
           requiresAdmin: true
         },
         {
           icon: ListVideo,
-          label: 'Danh sách phim (Xem)',
+          label: 'Danh sách phim',
           href: '/movies/view',
           requiresAdmin: false
         },
@@ -69,7 +69,7 @@ const createMenuItems = (
         },
         {
           icon: Clock,
-          label: 'Gia hạn',
+          label: 'Gia hạn truy cập',
           onClick: {
             type: 'extend',
             handler: handleExtend
@@ -77,7 +77,7 @@ const createMenuItems = (
         },
         {
           icon: LogOut,
-          label: 'Kết thúc làm việc',
+          label: 'Kết thúc phiên làm việc',
           onClick: {
             type: 'end',
             handler: handleEnd
@@ -290,6 +290,11 @@ export default function Sidebar() {
         cancelButton: `bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg`,
       },
       background: isDark ? '#1f2937' : '#ffffff',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocomplete: 'off', // Ngăn trình duyệt lưu thông tin input
+        spellcheck: 'false'
+      },
       inputValidator: (value) => {
         if (!value) {
           return 'Vui lòng nhập giftcode!';

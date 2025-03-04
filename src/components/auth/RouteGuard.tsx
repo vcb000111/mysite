@@ -1,33 +1,41 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMoviesAccess } from '@/contexts/MoviesAccessContext';
-import Swal from 'sweetalert2';
+import { Toast } from '@/lib/toast.helper';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function RouteGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
   const { canAccessRoute } = useMoviesAccess();
+  const { isDark } = useTheme();
+  const [canAccess, setCanAccess] = useState(false);
 
   useEffect(() => {
-    if (!canAccessRoute(pathname)) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Không có quyền truy cập',
-        text: 'Bạn cần có quyền admin để truy cập trang này.',
-        confirmButtonText: 'Quay lại',
-        customClass: {
-          popup: 'dark:bg-gray-800',
-          title: 'text-gray-800 dark:text-white font-medium',
-          htmlContainer: 'text-gray-600 dark:text-gray-300',
-          confirmButton: 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg'
-        }
-      }).then(() => {
+    const checkAccess = async () => {
+      if (!canAccessRoute(pathname)) {
         router.push('/');
-      });
-    }
-  }, [pathname, canAccessRoute, router]);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await Toast.fire({
+          icon: 'error',
+          title: 'Bạn không có quyền truy cập trang này',
+          background: isDark ? '#1f2937' : '#ffffff',
+          color: isDark ? '#ffffff' : '#000000'
+        });
+      } else {
+        setCanAccess(true);
+      }
+    };
+
+    checkAccess();
+  }, [pathname, router, canAccessRoute, isDark]);
+
+  // Hiển thị trang trống trong khi kiểm tra quyền truy cập
+  if (!canAccess) {
+    return null;
+  }
 
   return <>{children}</>;
 } 

@@ -367,8 +367,8 @@ export default function Sidebar() {
   const giftCodeButton = (
     <button
       onClick={handleGiftCodeClick}
-      className="flex items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200
-        text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-sm md:text-base"
+      className={`flex items-center ${isCollapsed ? 'justify-center' : ''} gap-1 px-2 py-2 rounded-lg transition-all duration-200
+        text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-sm md:text-base`}
     >
       <Plus className="w-5 h-5" />
       {!isCollapsed && <span>Nhập giftcode</span>}
@@ -460,7 +460,7 @@ export default function Sidebar() {
                 {item.href ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : ''} gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                       ${pathname === item.href
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -473,13 +473,13 @@ export default function Sidebar() {
                   <div className="mb-1">
                     <button
                       onClick={() => toggleDropdown(item.label)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base    
+                      className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base    
                         ${accessibleItems && isParentActive(accessibleItems)
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''} gap-2`}>
                         <Icon className="w-4 h-4" />
                         {!isCollapsed && <span>{item.label}</span>}
                       </div>
@@ -498,7 +498,7 @@ export default function Sidebar() {
                             {subItem.onClick ? (
                               <button
                                 onClick={() => handleMenuItemClick(subItem)}
-                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm md:text-base
+                                className={`flex items-center ${isCollapsed ? 'justify-center' : ''} gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 w-full text-sm md:text-base
                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
                               >
                                 <subItem.icon className="w-4 h-4" />
@@ -507,7 +507,7 @@ export default function Sidebar() {
                             ) : (
                               <Link
                                 href={subItem.href || '#'}
-                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
+                                className={`flex items-center ${isCollapsed ? 'justify-center' : ''} gap-2 px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm md:text-base
                                   ${pathname === subItem.href
                                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -582,12 +582,34 @@ export default function Sidebar() {
         )}
 
         {/* Theme toggle button - Chỉ hiển thị trên desktop */}
-        <div className="hidden md:flex absolute bottom-4 left-0 right-0 justify-center">
+        <div className="hidden md:flex absolute bottom-4 left-0 right-0 flex-col gap-2">
+          {/* Toggle Sidebar Button */}
+          <button
+            onClick={toggleSidebar}
+            className={`flex items-center h-12 rounded-lg transition-all duration-200
+              ${isCollapsed ? 'w-12 justify-center' : 'w-[calc(100%-1rem)] px-4'}
+              hover:bg-gray-50 dark:hover:bg-gray-800 mx-auto`}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            ) : (
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            )}
+            <span
+              className={`ml-3 font-medium whitespace-nowrap transition-all duration-200 
+                ${isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}
+                text-gray-700 dark:text-gray-300`}
+            >
+              Thu gọn menu
+            </span>
+          </button>
+
+          {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
             className={`flex items-center h-12 rounded-lg transition-all duration-200
               ${isCollapsed ? 'w-12 justify-center' : 'w-[calc(100%-1rem)] px-4'}
-              hover:bg-gray-50 dark:hover:bg-gray-800`}
+              hover:bg-gray-50 dark:hover:bg-gray-800 mx-auto`}
           >
             <div className={`flex items-center w-full transition-all duration-200 ${!isCollapsed && 'group-hover:translate-x-2.5'}`}>
               {isDark ? (

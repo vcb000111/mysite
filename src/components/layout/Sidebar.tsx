@@ -4,7 +4,7 @@ import {
   Home, Wrench, Gamepad2, Calendar, MessagesSquare, Settings, ChevronLeft, ChevronRight, ChevronDown,
   Calculator, ArrowLeftRight, QrCode, Target, Dices, Puzzle, Sun, Moon,
   BookOpen, PenSquare, ListOrdered, Tags, FolderOpen,
-  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut, Menu
+  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut, Menu, Link2
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -37,39 +37,57 @@ const createMenuItems = (
   handleExtend: (handleClick: () => void) => Promise<number | boolean>,
   handleEnd: (handleClick: () => void) => Promise<boolean>
 ): MenuItem[] => [
-    { icon: Home, label: 'Trang chủ', href: '/' },
+    { icon: Home, label: 'Home', href: '/' },
     {
       icon: Film,
       label: 'My Movies',
       requiresAccess: true,
       items: [
         {
-          icon: Wrench, // Đổi icon sang Wrench để phù hợp với quản lý
-          label: 'Quản lý phim',
+          icon: Wrench,
+          label: 'Manage Movies',
           href: '/movies/manage',
           requiresAdmin: true
         },
         {
           icon: ListVideo,
-          label: 'Danh sách phim',
+          label: 'Movie List',
           href: '/movies/view',
           requiresAdmin: false
         },
         {
+          icon: MessagesSquare,
+          label: 'Feedback & Movie Request',
+          href: '/movies/feedback',
+          requiresAdmin: false
+        },
+        {
+          icon: MessagesSquare,
+          label: 'Manage Feedback & Request',
+          href: '/movies/manage-feedback',
+          requiresAdmin: true
+        },
+        {
           icon: Clapperboard,
-          label: 'Thể loại',
+          label: 'Categories',
           href: '/movies/categories',
           requiresAdmin: true
         },
         {
           icon: Star,
-          label: 'Kiểm tra phim',
+          label: 'Check Movies',
           href: '/movies/check',
           requiresAdmin: true
         },
         {
+          icon: Link2,
+          label: 'Check Shorten Link',
+          href: '/movies/check-shorten',
+          requiresAdmin: true
+        },
+        {
           icon: Clock,
-          label: 'Gia hạn truy cập',
+          label: 'Extend Access',
           onClick: {
             type: 'extend',
             handler: handleExtend
@@ -77,7 +95,7 @@ const createMenuItems = (
         },
         {
           icon: LogOut,
-          label: 'Kết thúc phiên làm việc',
+          label: 'End Session',
           onClick: {
             type: 'end',
             handler: handleEnd
@@ -89,30 +107,30 @@ const createMenuItems = (
       icon: BookOpen,
       label: 'Blog',
       items: [
-        { icon: PenSquare, label: 'Viết bài mới', href: '/blog/new' },
-        { icon: ListOrdered, label: 'Quản lý bài viết', href: '/blog/posts' },
-        { icon: Tags, label: 'Thẻ', href: '/blog/tags' },
-        { icon: FolderOpen, label: 'Danh mục', href: '/blog/categories' },
+        { icon: PenSquare, label: 'New Post', href: '/blog/new' },
+        { icon: ListOrdered, label: 'Manage Posts', href: '/blog/posts' },
+        { icon: Tags, label: 'Tags', href: '/blog/tags' },
+        { icon: FolderOpen, label: 'Categories', href: '/blog/categories' },
       ]
     },
     {
       icon: Wrench,
       label: 'Tools',
       items: [
-        { icon: ArrowLeftRight, label: 'Chuyển đổi tiền tệ', href: '/tools/converter' },
-        { icon: QrCode, label: 'Tạo mã QR', href: '/tools/qr-code' },
+        { icon: ArrowLeftRight, label: 'Currency Converter', href: '/tools/converter' },
+        { icon: QrCode, label: 'QR Code Generator', href: '/tools/qr-code' },
       ]
     },
     {
       icon: Gamepad2,
       label: 'Games',
       items: [
-        { icon: Target, label: 'Cờ caro', href: '/games/tic-tac-toe' },
-        { icon: Dices, label: 'Rắn săn mồi', href: '/games/snake' },
-        { icon: Puzzle, label: 'Xếp hình', href: '/games/puzzle' },
+        { icon: Target, label: 'Tic Tac Toe', href: '/games/tic-tac-toe' },
+        { icon: Dices, label: 'Snake Game', href: '/games/snake' },
+        { icon: Puzzle, label: 'Puzzle', href: '/games/puzzle' },
       ]
     },
-    { icon: Settings, label: 'Cài đặt', href: '/settings' },
+    { icon: Settings, label: 'Settings', href: '/settings' },
   ];
 
 export default function Sidebar() {
@@ -123,22 +141,22 @@ export default function Sidebar() {
 
   const handleExtend = async (handleClick: () => void): Promise<number | boolean> => {
     const result = await Swal.fire({
-      title: 'Gia hạn truy cập',
+      title: 'Extend Access',
       input: 'number',
-      inputPlaceholder: 'Nhập số giờ...',
+      inputPlaceholder: 'Enter hours...',
       showCancelButton: true,
-      confirmButtonText: 'Xác nhận',
-      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Confirm',
+      cancelButtonText: 'Cancel',
       inputValidator: (value) => {
         if (!value) {
-          return 'Vui lòng nhập số giờ!';
+          return 'Please enter hours!';
         }
         const hours = parseInt(value);
         if (hours <= 0) {
-          return 'Số giờ phải lớn hơn 0!';
+          return 'Hours must be greater than 0!';
         }
         if (hours > 24) {
-          return 'Không thể gia hạn quá 24 giờ!';
+          return 'Cannot extend more than 24 hours!';
         }
         return null;
       },
@@ -162,12 +180,12 @@ export default function Sidebar() {
 
   const handleEnd = async (handleClick: () => void) => {
     const result = await Swal.fire({
-      title: 'Xác nhận kết thúc',
-      text: 'Bạn có chắc chắn muốn kết thúc phiên làm việc? Bạn sẽ cần nhập lại giftcode để truy cập lại.',
+      title: 'Confirm End Session',
+      text: 'Are you sure you want to end the session? You will need to enter a giftcode to access again.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Xác nhận',
-      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Confirm',
+      cancelButtonText: 'Cancel',
       customClass: {
         popup: `${isDark ? 'dark-mode' : ''}`,
         title: `text-gray-800 dark:text-white font-medium`,
@@ -183,8 +201,8 @@ export default function Sidebar() {
       handleClick();
       await Swal.fire({
         icon: 'success',
-        title: 'Đã kết thúc!',
-        text: 'Phiên làm việc đã được kết thúc.',
+        title: 'Success!',
+        text: 'Session has been ended.',
         timer: 2000,
         customClass: {
           popup: `${isDark ? 'dark-mode' : ''}`,
@@ -276,12 +294,12 @@ export default function Sidebar() {
 
   const handleGiftCodeClick = async () => {
     const result = await Swal.fire({
-      title: 'Nhập Giftcode',
+      title: 'Enter Giftcode',
       input: 'text',
-      inputPlaceholder: 'Nhập giftcode của bạn...',
+      inputPlaceholder: 'Enter your giftcode...',
       showCancelButton: true,
-      confirmButtonText: 'Xác nhận',
-      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Confirm',
+      cancelButtonText: 'Cancel',
       customClass: {
         popup: `${isDark ? 'dark-mode' : ''}`,
         title: `text-gray-800 dark:text-white font-medium`,
@@ -297,7 +315,7 @@ export default function Sidebar() {
       },
       inputValidator: (value) => {
         if (!value) {
-          return 'Vui lòng nhập giftcode!';
+          return 'Please enter giftcode!';
         }
         return null;
       }
@@ -308,8 +326,8 @@ export default function Sidebar() {
       if (isValid) {
         await Swal.fire({
           icon: 'success',
-          title: 'Thành công!',
-          text: 'Bạn đã mở khóa menu Movies trong 1 giờ.',
+          title: 'Success!',
+          text: 'You have unlocked Movies menu for 1 hour.',
           timer: 2000,
           customClass: {
             popup: `${isDark ? 'dark-mode' : ''}`,
@@ -321,8 +339,8 @@ export default function Sidebar() {
       } else {
         await Swal.fire({
           icon: 'error',
-          title: 'Giftcode không hợp lệ!',
-          text: 'Vui lòng kiểm tra lại giftcode.',
+          title: 'Invalid Giftcode!',
+          text: 'Please check your giftcode.',
           customClass: {
             popup: `${isDark ? 'dark-mode' : ''}`,
             title: `text-gray-800 dark:text-white font-medium`,
@@ -347,8 +365,8 @@ export default function Sidebar() {
         const remainingTime = getRemainingTime();
         await Swal.fire({
           icon: 'success',
-          title: 'Gia hạn thành công!',
-          text: `Thời gian truy cập còn lại: ${remainingTime} giờ`,
+          title: 'Extension Successful!',
+          text: `Remaining access time: ${remainingTime} hours`,
           timer: 2000,
           customClass: {
             popup: `${isDark ? 'dark-mode' : ''}`,
@@ -371,7 +389,7 @@ export default function Sidebar() {
         text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-sm md:text-base`}
     >
       <Plus className="w-5 h-5" />
-      {!isCollapsed && <span>Nhập giftcode</span>}
+      {!isCollapsed && <span>Enter giftcode</span>}
     </button>
   );
 
@@ -408,7 +426,7 @@ export default function Sidebar() {
         {/* Logo section */}
         <div className="flex items-center justify-between h-12 px-3 border-b border-gray-200 dark:border-gray-800">
           <span className="text-lg font-bold animate-gradient-slow">
-            {isCollapsed ? 'Mink' : 'Bảo Mink Site'}
+            {isCollapsed ? 'Mink' : 'BMINK Site'}
           </span>
 
           {/* Mobile toggle button */}
@@ -537,12 +555,12 @@ export default function Sidebar() {
               {isDark ? (
                 <>
                   <Sun className="w-4 h-4 text-yellow-500" />
-                  <span>Chế độ sáng</span>
+                  <span>Light Mode</span>
                 </>
               ) : (
                 <>
                   <Moon className="w-4 h-4 text-blue-600" />
-                  <span>Chế độ tối</span>
+                  <span>Dark Mode</span>
                 </>
               )}
             </button>
@@ -600,7 +618,7 @@ export default function Sidebar() {
                 ${isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}
                 text-gray-700 dark:text-gray-300`}
             >
-              Thu gọn menu
+              Collapse menu
             </span>
           </button>
 
@@ -622,7 +640,7 @@ export default function Sidebar() {
                   ${isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}
                   text-gray-700 dark:text-gray-300`}
               >
-                {isDark ? 'Chế độ sáng' : 'Chế độ tối'}
+                {isDark ? 'Light Mode' : 'Dark Mode'}
               </span>
             </div>
           </button>

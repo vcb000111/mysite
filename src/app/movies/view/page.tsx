@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Star, X, Link as Image, Download } from 'lucide-react';
+import { Plus, Search, Star, Edit, Trash2, X, Link as Heart, HeartOff, Eye, EyeOff, Image, Download, Link2 } from 'lucide-react';
 import { GradientGenerator } from '@/app/utils/gradients';
 import React from 'react';
 import Swal from 'sweetalert2';
@@ -199,7 +199,7 @@ export default function MovieList() {
         if (i === retries - 1) {
           Toast.fire({
             icon: 'error',
-            title: 'Không thể kết nối tới server. Vui lòng thử lại sau.'
+            title: 'Cannot connect to server. Please try again later.'
           });
           return false;
         }
@@ -316,23 +316,23 @@ export default function MovieList() {
     try {
       // Hiển thị modal hướng dẫn
       await Swal.fire({
-        title: 'Hướng dẫn tải xuống',
+        title: 'Download Guide',
         html: `
           <div class="text-left space-y-4 dark:text-gray-300">
-            <p>1. Nhấn nút <strong>"Đi đến trang tải xuống"</strong> bên dưới</p>
-            <p>2. Đợi 3 giây và nhấn <strong>"I'M A HUMAN"</strong> trên trang ouo.io</p>
-            <p>3. Đợi 3 giây và nhấn <strong>"GET LINK"</strong> trên trang ouo.io</p>
-            <p>4. Nếu gặp lỗi <strong class="text-red-500">ERR_FAILED</strong> trên trình duyệt:</p>
+            <p>1. Click the <strong>"Go to download page"</strong> button below</p>
+            <p>2. Wait 3 seconds and click <strong>"I'M A HUMAN"</strong> on ouo.io</p>
+            <p>3. Wait 3 seconds and click <strong>"GET LINK"</strong> on ouo.io</p>
+            <p>4. If you get <strong class="text-red-500">ERR_FAILED</strong> error in browser:</p>
             <ul class="list-disc pl-5">
-              <li>Copy link từ thanh địa chỉ</li>
-              <li>Mở tab mới và paste link vào</li>
+              <li>Copy link from address bar</li>
+              <li>Open new tab and paste the link</li>
             </ul>
-            <p>5. Xem trực tiếp hoặc lưu phim về tài khoản Pikpak</p>
+            <p>5. Watch online or save to your Pikpak account</p>
           </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Đi đến trang tải xuống',
-        cancelButtonText: 'Hủy',
+        confirmButtonText: 'Go to download page',
+        cancelButtonText: 'Cancel',
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
         background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
@@ -371,7 +371,7 @@ export default function MovieList() {
             console.error('Error updating download count:', error);
             Toast.fire({
               icon: 'error',
-              title: 'Có lỗi xảy ra khi cập nhật số lượt tải',
+              title: 'Error updating download count',
               background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
               color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
             });
@@ -379,10 +379,10 @@ export default function MovieList() {
         }
       });
     } catch (error) {
-      console.error('Error showing download guide:', error);
+      console.error('Error showing guide:', error);
       Toast.fire({
         icon: 'error',
-        title: 'Có lỗi xảy ra khi hiển thị hướng dẫn',
+        title: 'Error showing guide',
         background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
         color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
       });
@@ -578,7 +578,7 @@ export default function MovieList() {
             text-gray-600 dark:text-gray-300
             transition-all duration-200 backdrop-blur-sm
             transform hover:scale-110 active:scale-95"
-          title={isSingleCardMobile ? "Chuyển sang 2 cột" : "Chuyển sang 1 cột"}
+          title={isSingleCardMobile ? "Switch to 2 columns" : "Switch to 1 column"}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -600,7 +600,7 @@ export default function MovieList() {
               text-gray-600 dark:text-gray-300
               transition-all duration-200 backdrop-blur-sm
               transform hover:scale-110 active:scale-95"
-            title="Lên đầu trang"
+            title="To top"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="md:h-6 md:w-6 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -616,7 +616,7 @@ export default function MovieList() {
               text-gray-600 dark:text-gray-300
               transition-all duration-200 backdrop-blur-sm
               transform hover:scale-110 active:scale-95"
-            title="Xuống cuối trang"
+            title="To bottom"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="md:h-6 md:w-6 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -627,8 +627,12 @@ export default function MovieList() {
 
       <div className="bg-white dark:bg-gray-800 md:rounded-2xl shadow-lg md:p-6 p-2 border border-gray-100 dark:border-gray-700">
         {/* Header */}
-        <div className="flex justify-between items-center md:mb-6 mb-2">
-          <h1 className="text-2xl font-bold animate-gradient">Danh sách phim</h1>
+        <div className="flex flex-col md:mb-6 mb-2">
+          <h1 className="text-2xl font-bold animate-gradient">Movie List</h1>
+          <p className="text-sm md:text-base font-semibold text-gray-800 dark:text-gray-200">
+            <span className="font-bold">Subjectivity, POV, Prostitution, Beauty, 4K, 1080p.</span>
+            <span className="font-bold"> All movies are <strong className="text-blue-500">ENGLISH SOFT SUB</strong> and always available for download.</span>
+          </p>
         </div>
 
         {/* Loading spinner */}
@@ -651,7 +655,7 @@ export default function MovieList() {
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    placeholder="Tìm kiếm theo tiêu đề, mã phim, diễn viên, thể loại..."
+                    placeholder="Search by title, code, actress, genre..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-10 py-2 rounded-lg border dark:border-gray-700 
@@ -692,7 +696,7 @@ export default function MovieList() {
                           dark:focus:ring-offset-gray-800"
                       />
                       <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Ngẫu nhiên
+                        Random
                       </span>
                     </label>
 
@@ -728,7 +732,7 @@ export default function MovieList() {
                           dark:focus:ring-offset-gray-800"
                       />
                       <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Tự động chuyển ảnh
+                        Auto change image
                       </span>
                     </label>
                   </div>
@@ -742,7 +746,7 @@ export default function MovieList() {
                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
                       transition-all duration-200 text-sm"
                   >
-                    <option value="">Tất cả diễn viên</option>
+                    <option value="">All actresses</option>
                     {allActresses.map(actress => (
                       <option key={actress} value={actress}>{actress}</option>
                     ))}
@@ -757,7 +761,7 @@ export default function MovieList() {
                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
                       transition-all duration-200 text-sm"
                   >
-                    <option value="">Tất cả thể loại</option>
+                    <option value="">All genres</option>
                     {allGenres.map(genre => (
                       <option key={genre} value={genre}>{genre}</option>
                     ))}
@@ -772,9 +776,9 @@ export default function MovieList() {
                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
                       transition-all duration-200 text-sm"
                   >
-                    <option value="added">Ngày thêm</option>
-                    <option value="newest">Ngày phát hành (Mới nhất)</option>
-                    <option value="oldest">Ngày phát hành (Cũ nhất)</option>
+                    <option value="added">Date added</option>
+                    <option value="newest">Release date (Newest)</option>
+                    <option value="oldest">Release date (Oldest)</option>
                   </select>
 
                   {/* Rating sort select */}
@@ -786,9 +790,9 @@ export default function MovieList() {
                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
                       transition-all duration-200 text-sm"
                   >
-                    <option value="">Đánh giá (Mặc định)</option>
-                    <option value="rating-desc">Đánh giá (Cao đến thấp)</option>
-                    <option value="rating-asc">Đánh giá (Thấp đến cao)</option>
+                    <option value="">Rating (Default)</option>
+                    <option value="rating-desc">Rating (High to Low)</option>
+                    <option value="rating-asc">Rating (Low to High)</option>
                   </select>
                 </div>
 
@@ -804,29 +808,29 @@ export default function MovieList() {
                       flex items-center gap-1"
                   >
                     <X className="w-4 h-4" />
-                    Xóa bộ lọc
+                    Clear filters
                   </button>
                 )}
               </div>
 
-              {/* Results count và Items per page */}
+              {/* Results count and Items per page */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <div>
                   {filteredMovies.length === movies.length ? (
-                    <span>Tổng số {movies.length} phim</span>
+                    <span>Total {movies.length} movies</span>
                   ) : (
-                    <span>Hiển thị {filteredMovies.length}/{movies.length} phim</span>
+                    <span>Showing {filteredMovies.length}/{movies.length} movies</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Số phim mỗi trang:</span>
+                  <span>Movies per page:</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => {
                       const newValue = Number(e.target.value);
                       setItemsPerPage(newValue);
                       setCurrentPage(1);
-                      saveItemsPerPage(newValue); // Lưu vào localStorage khi thay đổi
+                      saveItemsPerPage(newValue); // Lưu vào localStorage when changing
                     }}
                     className="px-2 py-1 rounded-lg border dark:border-gray-700
                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
@@ -841,7 +845,7 @@ export default function MovieList() {
               </div>
             </div>
 
-            {/* Movie grid - Cập nhật để sử dụng paginatedMovies */}
+            {/* Movie grid - Updated to use paginatedMovies */}
             <div className={`grid gap-4 ${isSingleCardMobile
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
               : 'grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -854,7 +858,7 @@ export default function MovieList() {
                 >
                   {/* Poster */}
                   <div className="relative overflow-hidden group aspect-video">
-                    {/* Ảnh hiện tại */}
+                    {/* Current image */}
                     <img
                       key={currentImageIndexes[movie._id] || 0}
                       src={(() => {
@@ -873,12 +877,12 @@ export default function MovieList() {
                       }}
                     />
 
-                    {/* Ảnh tiếp theo (để fade) */}
+                    {/* Next image (for fade) */}
                     <img
                       key={`next-${currentImageIndexes[movie._id] || 0}`}
                       src={(() => {
                         if (isFading[movie._id] && !autoChangeImage) {
-                          // Khi đang fade và tắt auto change, hiển thị poster
+                          // When fading and auto change is off, show poster
                           return movie.poster;
                         }
                         const allImages = [movie.poster, ...(movie.images || [])];
@@ -893,7 +897,7 @@ export default function MovieList() {
                         ${isFading[movie._id] ? 'opacity-100' : 'opacity-0'}`}
                     />
 
-                    {/* Overlay cho hover effect */}
+                    {/* Overlay for hover effect */}
                     <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-110">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
@@ -954,6 +958,16 @@ export default function MovieList() {
                     <div
                       id={`movie-${movie._id}`}
                       className="relative group h-auto md:h-[72px]"
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const position = rect.left > window.innerWidth / 2 ? 'left' : 'right';
+                        setShowTooltip({
+                          id: movie._id,
+                          text: movie.title,
+                          position: position
+                        });
+                      }}
+                      onMouseLeave={() => setShowTooltip(null)}
                     >
                       <h3
                         className={`font-semibold text-gray-800 dark:text-white
@@ -1012,7 +1026,7 @@ export default function MovieList() {
                       </div>
                     </div>
 
-                    {/* Actress và Image count */}
+                    {/* Actress and Image count */}
                     <div className={`text-${isSingleCardMobile ? 'base' : 'xs'} md:text-sm text-gray-600 dark:text-gray-300 flex justify-between items-center`}>
                       <div className="flex flex-wrap gap-1 md:gap-2">
                         {formatActressName(movie.actress).map((pair, index) => (
@@ -1041,7 +1055,7 @@ export default function MovieList() {
                             className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-gray-100 hover:bg-gray-200 
                               dark:bg-gray-700 dark:hover:bg-gray-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
                               transition-colors duration-200 group cursor-pointer`}
-                            title="Nhấn để xem tất cả ảnh"
+                            title="Click to view all images"
                           >
                             <Image className="w-3 h-3 md:w-4 md:h-4" />
                             <span>{(movie.images?.length || 0) + 1}</span>
@@ -1054,7 +1068,7 @@ export default function MovieList() {
                             className={`flex items-center gap-1 ${isSingleCardMobile ? 'text-base' : 'text-xs'} bg-blue-500 hover:bg-blue-600 
                               dark:bg-blue-700 dark:hover:bg-blue-600 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg
                               transition-colors duration-200 group cursor-pointer text-white`}
-                            title="Tải xuống"
+                            title="Download"
                           >
                             <Download className="w-3 h-3 md:w-4 md:h-4" />
                             <span>{movie.downloads || 0}</span>
@@ -1079,7 +1093,7 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  <span className="hidden md:inline">Đầu</span>
+                  <span className="hidden md:inline">First</span>
                   <span className="md:hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -1096,7 +1110,7 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  <span className="hidden md:inline">Trước</span>
+                  <span className="hidden md:inline">Previous</span>
                   <span className="md:hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1117,7 +1131,7 @@ export default function MovieList() {
                       pageNumber = currentPage - 2 + i;
                     }
 
-                    // Hiển thị nhiều trang hơn trên mobile nhưng vẫn giữ gọn gàng
+                    // Show more pages on mobile but keep it compact
                     const shouldHideOnMobile = (pageNumber !== currentPage &&
                       pageNumber !== 1 &&
                       pageNumber !== totalPages &&
@@ -1149,7 +1163,7 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  <span className="hidden md:inline">Sau</span>
+                  <span className="hidden md:inline">Next</span>
                   <span className="md:hidden">&gt;</span>
                 </button>
 
@@ -1162,7 +1176,7 @@ export default function MovieList() {
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                 >
-                  <span className="hidden md:inline">Cuối</span>
+                  <span className="hidden md:inline">Last</span>
                   <span className="md:hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -1171,7 +1185,7 @@ export default function MovieList() {
                 </button>
 
                 <span className="w-full md:w-auto text-center text-sm text-gray-600 dark:text-gray-400">
-                  Trang {currentPage}/{totalPages}
+                  Page {currentPage}/{totalPages}
                 </span>
               </div>
             )}

@@ -136,6 +136,34 @@ const getMobileCardLayout = (): boolean => {
   return true; // Giá trị mặc định khi ở server-side
 };
 
+// Thêm hàm helper để rút gọn link bằng ouo.io
+const shortenWithOuo = async (url: string): Promise<string> => {
+  try {
+    // Nếu URL đã là ouo.io link thì trả về nguyên bản
+    if (url.includes('ouo.io')) {
+      return url;
+    }
+
+    const response = await fetch('/api/shorten', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to shorten URL');
+    }
+
+    const data = await response.json();
+    return data.shortenedUrl;
+  } catch (error) {
+    console.error('Error shortening URL:', error);
+    return url; // Trả về URL gốc nếu có lỗi
+  }
+};
+
 export default function MovieList() {
   const [buttonClasses, setButtonClasses] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -314,6 +342,7 @@ export default function MovieList() {
     });
   };
 
+  // Cập nhật hàm handleAddMovie
   const handleAddMovie = async () => {
     try {
       if (!movieInput.title || !movieInput.code) {
@@ -327,6 +356,17 @@ export default function MovieList() {
       const parsedInfo = parseMovieInfo(pasteText);
       const rating = parsedInfo?.rating || 0;
 
+      // Rút gọn URL nếu có
+      let shortenedUrl = '';
+      if (movieInput.movieUrl) {
+        Toast.fire({
+          icon: 'info',
+          title: 'Đang rút gọn link...',
+          timer: 2000,
+        });
+        shortenedUrl = await shortenWithOuo(movieInput.movieUrl);
+      }
+
       const movieData = {
         title: movieInput.title,
         code: movieInput.code,
@@ -337,7 +377,7 @@ export default function MovieList() {
         rating: rating,
         genre: movieInput.genre,
         images: movieInput.images || [],
-        movieUrl: movieInput.movieUrl || '',
+        movieUrl: shortenedUrl,
         downloads: 0,
         isFavorite: false,
         isSeen: false
@@ -367,10 +407,10 @@ export default function MovieList() {
         poster: '',
         releaseDate: '',
         actress: '',
-        genre: getLastSelectedGenres(), // Lưu genres đã chọn trước khi reset form
+        genre: getLastSelectedGenres(),
         images: []
       });
-      setPasteText(''); // Reset paste text
+      setPasteText('');
       resetForm();
       saveLastSelectedGenres(movieInput.genre);
       Toast.fire({
@@ -409,10 +449,22 @@ export default function MovieList() {
     }
   };
 
+  // Cập nhật hàm handleEditMovie
   const handleEditMovie = async () => {
     if (!editingMovie) return;
 
     try {
+      // Rút gọn URL nếu có và đã thay đổi
+      let shortenedUrl = movieInput.movieUrl || '';
+      if (movieInput.movieUrl && movieInput.movieUrl !== editingMovie.movieUrl) {
+        Toast.fire({
+          icon: 'info',
+          title: 'Đang rút gọn link...',
+          timer: 2000,
+        });
+        shortenedUrl = await shortenWithOuo(movieInput.movieUrl);
+      }
+
       const response = await fetch(`/api/movies/${editingMovie._id}`, {
         method: 'PUT',
         headers: {
@@ -421,7 +473,7 @@ export default function MovieList() {
         body: JSON.stringify({
           ...movieInput,
           images: movieInput.images || [],
-          movieUrl: movieInput.movieUrl || '',
+          movieUrl: shortenedUrl,
           isSeen: editingMovie.isSeen,
           isFavorite: editingMovie.isFavorite,
           rating: editingMovie.rating,
@@ -446,7 +498,7 @@ export default function MovieList() {
         genre: getLastSelectedGenres(),
         images: []
       });
-      setPasteText(''); // Reset paste text
+      setPasteText('');
       resetForm();
       saveLastSelectedGenres(movieInput.genre);
       Toast.fire({
@@ -524,8 +576,14 @@ export default function MovieList() {
 
   const handleDownload = async (movieId: string, movieUrl: string) => {
     try {
-      // Mở link trong tab mới
-      window.open(movieUrl, '_blank');
+      // Mở link bằng thẻ a
+      const link = document.createElement('a');
+      link.href = movieUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       // Tăng số lượt download
       const response = await fetch(`/api/movies/${movieId}`, {
@@ -546,6 +604,10 @@ export default function MovieList() {
       ));
     } catch (error) {
       console.error('Error updating download count:', error);
+      Toast.fire({
+        icon: 'error',
+        title: 'Có lỗi xảy ra khi tải xuống'
+      });
     }
   };
 

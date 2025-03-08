@@ -337,7 +337,7 @@ export default function MovieList() {
         rating: rating,
         genre: movieInput.genre,
         images: movieInput.images || [],
-        movieUrl: '',
+        movieUrl: movieInput.movieUrl || '',
         downloads: 0,
         isFavorite: false,
         isSeen: false

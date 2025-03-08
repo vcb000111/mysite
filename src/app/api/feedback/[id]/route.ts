@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
@@ -32,12 +32,9 @@ const FeedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
   try {
-    const id = params.id;
+    const id = request.nextUrl.pathname.split('/').pop();
 
     if (!id) {
       return NextResponse.json(

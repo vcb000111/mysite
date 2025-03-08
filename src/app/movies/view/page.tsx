@@ -314,28 +314,78 @@ export default function MovieList() {
 
   const handleDownload = async (movieId: string, movieUrl: string) => {
     try {
-      // Mở link trong tab mới
-      window.open(movieUrl, '_blank');
+      // Hiển thị modal hướng dẫn
+      await Swal.fire({
+        title: 'Hướng dẫn tải xuống',
+        html: `
+          <div class="text-left space-y-4 dark:text-gray-300">
+            <p>1. Nhấn nút <strong>"Đi đến trang tải xuống"</strong> bên dưới</p>
+            <p>2. Đợi 3 giây và nhấn <strong>"I'M A HUMAN"</strong> trên trang ouo.io</p>
+            <p>3. Đợi 3 giây và nhấn <strong>"GET LINK"</strong> trên trang ouo.io</p>
+            <p>4. Nếu gặp lỗi <strong class="text-red-500">ERR_FAILED</strong> trên trình duyệt:</p>
+            <ul class="list-disc pl-5">
+              <li>Copy link từ thanh địa chỉ</li>
+              <li>Mở tab mới và paste link vào</li>
+            </ul>
+            <p>5. Xem trực tiếp hoặc lưu phim về tài khoản Pikpak</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Đi đến trang tải xuống',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+        customClass: {
+          popup: 'dark:bg-gray-800 dark:text-white',
+          title: 'dark:text-white text-center font-semibold',
+          htmlContainer: 'dark:text-gray-300',
+          confirmButton: 'dark:bg-blue-600 dark:hover:bg-blue-700',
+          cancelButton: 'dark:bg-red-600 dark:hover:bg-red-700'
+        }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          // Mở link trong tab mới
+          window.open(movieUrl, '_blank');
 
-      // Tăng số lượt download
-      const response = await fetch(`/api/movies/${movieId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ downloads: 1 }), // Server sẽ tự tăng thêm 1
+          try {
+            // Tăng số lượt download
+            const response = await fetch(`/api/movies/${movieId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ downloads: 1 }), // Server sẽ tự tăng thêm 1
+            });
+
+            if (!response.ok) throw new Error('Failed to update download count');
+
+            const updatedMovie = await response.json();
+
+            // Cập nhật state
+            setMovies(prev => prev.map(movie =>
+              movie._id === movieId ? { ...movie, downloads: updatedMovie.downloads } : movie
+            ));
+          } catch (error) {
+            console.error('Error updating download count:', error);
+            Toast.fire({
+              icon: 'error',
+              title: 'Có lỗi xảy ra khi cập nhật số lượt tải',
+              background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+              color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+            });
+          }
+        }
       });
-
-      if (!response.ok) throw new Error('Failed to update download count');
-
-      const updatedMovie = await response.json();
-
-      // Cập nhật state
-      setMovies(prev => prev.map(movie =>
-        movie._id === movieId ? { ...movie, downloads: updatedMovie.downloads } : movie
-      ));
     } catch (error) {
-      console.error('Error updating download count:', error);
+      console.error('Error showing download guide:', error);
+      Toast.fire({
+        icon: 'error',
+        title: 'Có lỗi xảy ra khi hiển thị hướng dẫn',
+        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      });
     }
   };
 

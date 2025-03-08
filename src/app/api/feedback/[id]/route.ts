@@ -67,12 +67,9 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest) {
   try {
-    const id = params.id;
+    const id = request.nextUrl.pathname.split('/').pop();
     const body = await request.json();
 
     if (!id) {

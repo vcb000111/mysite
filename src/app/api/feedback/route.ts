@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
@@ -33,7 +33,7 @@ const FeedbackSchema = new mongoose.Schema({
 // Tạo model (chỉ tạo nếu chưa tồn tại)
 const Feedback = mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
@@ -51,7 +51,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 

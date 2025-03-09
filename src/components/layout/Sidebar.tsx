@@ -4,7 +4,7 @@ import {
   Home, Wrench, Gamepad2, Calendar, MessagesSquare, Settings, ChevronLeft, ChevronRight, ChevronDown,
   Calculator, ArrowLeftRight, QrCode, Target, Dices, Puzzle, Sun, Moon,
   BookOpen, PenSquare, ListOrdered, Tags, FolderOpen,
-  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut, Menu, Link2
+  Film, Plus, ListVideo, Star, Clapperboard, ChevronUp, Clock, LogOut, Menu, Link2, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -83,6 +83,12 @@ const createMenuItems = (
           icon: Link2,
           label: 'Check Shorten Link',
           href: '/movies/check-shorten',
+          requiresAdmin: true
+        },
+        {
+          icon: MessageSquare,
+          label: 'Generate Forum Comment',
+          href: '/movies/generate-comment',
           requiresAdmin: true
         },
         {
@@ -324,11 +330,13 @@ export default function Sidebar() {
     if (result.isConfirmed) {
       const isValid = checkGiftCode(result.value);
       if (isValid) {
+        // Mở rộng sidebar My Movies
+        setOpenDropdown('My Movies');
         await Swal.fire({
           icon: 'success',
           title: 'Success!',
-          text: 'You have unlocked Movies menu for 1 hour.',
-          timer: 2000,
+          text: 'You have unlocked Movies menu for 1 hour. Please check the Movies menu to see the unlocked features. Extend access to add more time.',
+          timer: 5000,
           customClass: {
             popup: `${isDark ? 'dark-mode' : ''}`,
             title: `text-gray-800 dark:text-white font-medium`,

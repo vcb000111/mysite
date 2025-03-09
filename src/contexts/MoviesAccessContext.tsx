@@ -140,7 +140,7 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
   const checkGiftCode = (code: string): boolean => {
     const currentDate = new Date();
     const ddMMyyyy = `${String(currentDate.getDate()).padStart(2, '0')}${String(currentDate.getMonth() + 1).padStart(2, '0')}${currentDate.getFullYear()}`;
-    const isAdminCode = code === `${ddMMyyyy}9371`;
+    const isAdminCode = code === `${ddMMyyyy}93719371`;
     const isUserCode = code === `${ddMMyyyy}9999`;
 
     if (isAdminCode || isUserCode) {
@@ -183,7 +183,7 @@ export function MoviesAccessProvider({ children }: { children: ReactNode }) {
     }
 
     // Giới hạn thời gian gia hạn
-    const maxHours = currentIsAdmin ? 24 : 1;
+    const maxHours = currentIsAdmin ? 24 : 12;
     const actualHours = Math.min(hours, maxHours);
     const newExpiry = currentExpiry + (actualHours * 60 * 60 * 1000);
 

@@ -640,6 +640,9 @@ export default function CheckMovies() {
                       <h3 className="text-lg font-medium animate-gradient-slow bg-gradient-to-r from-pink-500 via-purple-500 to-violet-500 bg-clip-text text-transparent bg-300% hover:bg-pos-100">
                         {file.searchName}
                       </h3>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-all">
+                        {file.name}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {(file.size / (1024 * 1024)).toFixed(2)} MB

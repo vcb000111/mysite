@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Smile } from 'lucide-react';
 import { Toast } from '@/lib/toast.helper';
 
 interface FeedbackForm {
@@ -12,12 +12,37 @@ interface FeedbackForm {
   contact?: string;
 }
 
-// Định nghĩa giới hạn ký tự
+// Định nghĩa giới hạn ký tự và số lần gửi
 const LIMITS = {
   title: 100,
   content: 1000,
   movieCode: 20,
-  contact: 100
+  contact: 100,
+  requestsPerHour: 10
+};
+
+// Helper function để kiểm tra giới hạn gửi
+const checkRequestLimit = () => {
+  const now = new Date().getTime();
+  const oneHourAgo = now - (60 * 60 * 1000);
+
+  // Lấy lịch sử gửi từ localStorage
+  const requestHistory = JSON.parse(localStorage.getItem('requestHistory') || '[]');
+
+  // Lọc ra các request trong 1 giờ qua
+  const recentRequests = requestHistory.filter((timestamp: number) => timestamp > oneHourAgo);
+
+  // Cập nhật lại lịch sử
+  localStorage.setItem('requestHistory', JSON.stringify(recentRequests));
+
+  return recentRequests.length < LIMITS.requestsPerHour;
+};
+
+// Helper function để thêm request mới vào lịch sử
+const addRequestToHistory = () => {
+  const requestHistory = JSON.parse(localStorage.getItem('requestHistory') || '[]');
+  requestHistory.push(new Date().getTime());
+  localStorage.setItem('requestHistory', JSON.stringify(requestHistory));
 };
 
 export default function Feedback() {
@@ -32,6 +57,15 @@ export default function Feedback() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Kiểm tra giới hạn số lần gửi
+    if (!checkRequestLimit()) {
+      Toast.fire({
+        icon: 'error',
+        title: 'Bạn đã vượt quá giới hạn 10 lần gửi trong 1 giờ. Vui lòng thử lại sau.'
+      });
+      return;
+    }
 
     // Kiểm tra độ dài trước khi submit
     if (form.title.length > LIMITS.title ||
@@ -57,6 +91,9 @@ export default function Feedback() {
       });
 
       if (!response.ok) throw new Error('Failed to submit feedback');
+
+      // Thêm request vào lịch sử nếu thành công
+      addRequestToHistory();
 
       setForm({
         type: 'feedback',
@@ -91,7 +128,16 @@ export default function Feedback() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-6 text-center animate-gradient">
           Feedback & Movie Request
+          <br />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Only for feedback and requests for <strong className="text-blue-500">Subjectivity, POV, Prostitution</strong> genres movies.
+          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <br />
+            Request will take <strong className="text-blue-500">2-7 days</strong> to be processed. Please be patient!
+          </span>
         </h1>
+
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <form onSubmit={handleSubmit} className="space-y-6">

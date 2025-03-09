@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Search, Star, Edit, Trash2, X, Link as Heart, HeartOff, Eye, EyeOff, Image, Download, Link2 } from 'lucide-react';
+import { Plus, Search, Star, Edit, Trash2, X, Heart, HeartOff, Eye, EyeOff, Image, Download, Link2 } from 'lucide-react';
 import { GradientGenerator } from '@/app/utils/gradients';
 import React from 'react';
 import Swal from 'sweetalert2';
